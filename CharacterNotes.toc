@@ -1,0 +1,15 @@
+## Interface: 30300
+## Title: Character Notes
+## Notes: Set and manage character notes that are displayed in unit tooltips and /who results.
+## Author: Talryn
+## Version: 0.3
+## OptionalDeps: Ace3, LibDeformat-3.0, lib-st
+## X-Embeds: Ace3
+## X-Category: Interface Enhancements 
+## SavedVariables: CharacterNotesDB
+
+embeds.xml
+
+localization-enUS.lua
+
+CharacterNotes.lua
