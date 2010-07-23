@@ -27,3 +27,6 @@ L["Wrap Tooltips"] = true
 L["Wrap notes in tooltips"] = true
 L["Tooltip Wrap Length"] = true
 L["Maximum line length for a tooltip"] = true
+
+L["Left click"] = true
+L["to open/close the window"] = true

@@ -103,6 +103,13 @@ function CharacterNotes:OnInitialize()
 				self:NotesHandler("")
 			end
 		end,
+		OnTooltipShow = function(tooltip)
+			if tooltip and tooltip.AddLine then
+				tooltip:AddLine(GREEN .. L["Character Notes"])
+				tooltip:AddLine(YELLOW .. L["Left click"] .. " " .. WHITE
+					.. L["to open/close the window"])
+			end
+		end
 	})
 end
 
@@ -163,7 +170,7 @@ function CharacterNotes:CreateNotesFrame()
 	local noteswindow = CreateFrame("Frame", "CharacterNotesWindow", UIParent)
 	noteswindow:SetFrameStrata("DIALOG")
 	noteswindow:SetToplevel(true)
-	noteswindow:SetWidth(600)
+	noteswindow:SetWidth(630)
 	noteswindow:SetHeight(430)
 	noteswindow:SetPoint("CENTER", UIParent)
 	noteswindow:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background", 
@@ -224,10 +231,13 @@ function CharacterNotes:CreateNotesFrame()
 	searchterm:SetFontObject(ChatFontNormal)
 	searchterm:SetWidth(300)
 	searchterm:SetHeight(35)
-	searchterm:SetPoint("TOPLEFT", noteswindow, "TOPLEFT", 20, -50)
+	searchterm:SetPoint("TOPLEFT", noteswindow, "TOPLEFT", 25, -50)
 	searchterm:SetScript("OnShow", function() this:SetFocus() end)
 	searchterm:SetScript("OnEnterPressed", function() notesFrame.table:SortData() end)
 	searchterm:SetScript("OnEscapePressed", function() this:SetText(""); this:GetParent():Hide(); end)
+
+	table.frame:SetPoint("TOP", searchterm, "BOTTOM", 0, -20)
+	table.frame:SetPoint("LEFT", noteswindow, "LEFT", 20, 0)
 
 	local searchbutton = CreateFrame("Button", nil, noteswindow, "UIPanelButtonTemplate")
 	searchbutton:SetText(L["Search"])
