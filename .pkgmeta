@@ -17,6 +17,10 @@ externals:
         url: svn://svn.wowace.com/wow/lib-st/mainline/trunk
         tag: latest
 
+    Libs/LibDBIcon-1.0:
+        url: svn://svn.wowace.com/wow/libdbicon-1-0/mainline/trunk
+        tag: latest
+
     Libs/LibStub:
         url: svn://svn.wowace.com/wow/libstub/mainline/trunk
         tag: latest

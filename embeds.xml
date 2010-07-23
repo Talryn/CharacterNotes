@@ -13,4 +13,5 @@ xsi:schemaLocation="http://www.blizzard.com/wow/ui/
 <Include file="Libs\AceHook-3.0\AceHook-3.0.xml"/>
 <Include file="Libs\LibDeformat-3.0\lib.xml"/>
 <Include file="Libs\lib-st\lib-st.xml"/>
+<Script file="libs\LibDBIcon-1.0\LibDBIcon-1.0.lua" />
 </Ui>

@@ -5,6 +5,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("CharacterNotes", true)
 local LibDeformat = LibStub("LibDeformat-3.0")
 
 local LDB = LibStub("LibDataBroker-1.1")
+local icon = LibStub("LibDBIcon-1.0")
 
 local GREEN = "|cff00ff00"
 local YELLOW = "|cffffff00"
@@ -14,6 +15,9 @@ local WHITE = "|cffffffff"
 
 local defaults = {
 	profile = {
+		minimap = {
+			hide = true,
+		},
 		verbose = true,
 		wrapTooltip = true,
 		wrapTooltipLength = 50
@@ -33,13 +37,21 @@ local options = {
 			type = "header",
 			name = "General Options",
 		},
+	    minimap = {
+            name = L["Minimap Button"],
+            desc = L["Toggle the minimap button"],
+            type = "toggle",
+            set = "SetMinimapButton",
+            get = "GetMinimapButton",
+			order = 10
+        },
 	    verbose = {
             name = L["Verbose"],
             desc = L["Toggles the display of informational messages"],
             type = "toggle",
             set = "SetVerbose",
             get = "GetVerbose",
-			order = 10
+			order = 15
         },
 		displayheader = {
 			order = 20,
@@ -68,6 +80,7 @@ local options = {
     }
 }
 
+local noteLDB = nil
 local notesFrame = nil
 local editNoteFrame = nil
 local confirmDeleteFrame = nil
@@ -93,7 +106,7 @@ function CharacterNotes:OnInitialize()
 	self:RegisterChatCommand("searchnote", "NotesHandler")
 
 	-- Create the LDB launcher
-	LDB:NewDataObject("CharacterNotes",{
+	noteLDB = LDB:NewDataObject("CharacterNotes",{
 		type = "launcher",
 		icon = "Interface\\Icons\\INV_Misc_Note_06.blp",
 		OnClick = function(clickedframe, button)
@@ -111,6 +124,7 @@ function CharacterNotes:OnInitialize()
 			end
 		end
 	})
+	icon:Register("CharacterNotesLDB", noteLDB, self.db.profile.minimap)
 end
 
 function CharacterNotes:SetNoteHandler(input)
@@ -660,6 +674,21 @@ function CharacterNotes:CHAT_MSG_SYSTEM(event, message)
 	if name then
 		self:ScheduleTimer("DisplayNote", 0.1, name)
 	end
+end
+
+function CharacterNotes:SetMinimapButton(info, value)
+	-- Reverse the value since the stored value is to hide it and not show it
+    self.db.profile.minimap.hide = not value
+	if self.db.profile.minimap.hide then
+		icon:Hide("CharacterNotesLDB")
+	else
+		icon:Show("CharacterNotesLDB")
+	end
+end
+
+function CharacterNotes:GetMinimapButton(info)
+	-- Reverse the value since the stored value is to hide it and not show it
+    return not self.db.profile.minimap.hide
 end
 
 function CharacterNotes:SetVerbose(info, value)
