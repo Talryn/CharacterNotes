@@ -3,13 +3,13 @@
 ## Notes: Set and manage character notes that are displayed in unit tooltips and /who results.
 ## Author: Talryn
 ## Version: @project-version@
-## OptionalDeps: Ace3, LibDeformat-3.0, lib-st, LibDBIcon-1.0
+## OptionalDeps: Ace3, LibDeformat-3.0, lib-st, LibDataBroker-1.1, LibDBIcon-1.0
 ## X-Embeds: Ace3
 ## X-Category: Interface Enhancements 
 ## SavedVariables: CharacterNotesDB
 
 embeds.xml
 
-localization-enUS.lua
+locale.xml
 
 CharacterNotes.lua

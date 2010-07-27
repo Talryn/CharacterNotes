@@ -12,6 +12,7 @@ Notes can be set and managed:
 * From a command line interface
 * From a GUI interface
 * LDB launcher to bring up the GUI interface
+* Minimap button to bring up the GUI interface
 
 Command-line options:
 
