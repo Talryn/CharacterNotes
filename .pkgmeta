@@ -22,7 +22,7 @@ externals:
         tag: v1.1.4
 
     Libs/LibDBIcon-1.0:
-        url: svn://svn.wowace.com/wow/libdbicon-1-0/mainline/trunk
+        url: svn://svn.wowace.com/wow/libdbicon-1-0/mainline/trunk/LibDBIcon-1.0
         tag: latest
 
     Libs/LibStub:
