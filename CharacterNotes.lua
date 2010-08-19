@@ -161,17 +161,29 @@ function CharacterNotes:OnInitialize()
 		type = "launcher",
 		icon = "Interface\\Icons\\INV_Misc_Note_06.blp",
 		OnClick = function(clickedframe, button)
-			if self:IsNotesVisible() then
-				self:HideNotesWindow()
-			else
-				self:NotesHandler("")
-			end
+    		if button == "RightButton" then
+    			local optionsFrame = InterfaceOptionsFrame
+
+    			if optionsFrame:IsVisible() then
+    				optionsFrame:Hide()
+    			else
+    				InterfaceOptionsFrame_OpenToCategory(self.optionsFrame)
+    			end
+    		elseif button == "LeftButton" then
+    			if self:IsNotesVisible() then
+    				self:HideNotesWindow()
+    			else
+    				self:NotesHandler("")
+    			end
+            end
 		end,
 		OnTooltipShow = function(tooltip)
 			if tooltip and tooltip.AddLine then
 				tooltip:AddLine(GREEN .. L["Character Notes"])
 				tooltip:AddLine(YELLOW .. L["Left click"] .. " " .. WHITE
 					.. L["to open/close the window"])
+				tooltip:AddLine(YELLOW .. L["Right click"] .. " " .. WHITE
+					.. L["to open/close the configuration."])
 			end
 		end
 	})
@@ -732,14 +744,14 @@ function CharacterNotes:CHAT_MSG_SYSTEM(event, message)
 end
 
 function CharacterNotes:RAID_ROSTER_UPDATE(event, message)
-    local currentRaid = {}
-    local name
-    
     if GetNumRaidMembers() == 0 then
         -- Left a raid
         wipe(previousRaid)
     else
         if self.db.profile.notesForRaidMembers == true then
+            local currentRaid = {}
+            local name
+
             for i = 1, GetNumRaidMembers() do
                 name = GetUnitName("raid"..i, true)
                 if name then
@@ -766,15 +778,15 @@ end
 function CharacterNotes:PARTY_MEMBERS_CHANGED(event, message)
     -- If in a raid then don't worry about this event.
     if GetNumRaidMembers() > 0 then return end
-    
-    local currentParty = {}
-    local name
         
     if GetNumPartyMembers() == 0 then
         -- Left a party
         wipe(previousParty)
     else
         if self.db.profile.notesForPartyMembers == true then
+            local currentParty = {}
+            local name
+
             for i = 1, GetNumPartyMembers() do
                 name = GetUnitName("party"..i, true)
                 if name then

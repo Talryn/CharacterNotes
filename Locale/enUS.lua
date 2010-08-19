@@ -38,3 +38,5 @@ L["Toggles displaying notes for raid members."] = true
 
 L["Left click"] = true
 L["to open/close the window"] = true
+L["Right click"] = true
+L["to open/close the configuration."] = true
