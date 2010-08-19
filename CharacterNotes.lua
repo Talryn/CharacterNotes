@@ -1,4 +1,8 @@
-CharacterNotes = LibStub("AceAddon-3.0"):NewAddon("CharacterNotes", "AceConsole-3.0", "AceHook-3.0", "AceEvent-3.0", "AceTimer-3.0")
+local CharacterNotes = LibStub("AceAddon-3.0"):NewAddon("CharacterNotes", "AceConsole-3.0", "AceHook-3.0", "AceEvent-3.0", "AceTimer-3.0")
+
+local ADDON_NAME = ...
+
+local DEBUG = false
 
 local L = LibStub("AceLocale-3.0"):GetLocale("CharacterNotes", true)
 
@@ -20,71 +24,118 @@ local defaults = {
 		},
 		verbose = true,
 		wrapTooltip = true,
-		wrapTooltipLength = 50
+		wrapTooltipLength = 50,
+		notesForRaidMembers = false,
+		notesForPartyMembers = false
 	},
 	realm = {
 	    notes = {}
 	}
 }
 
-local options = {
-    name = "Character Notes",
-    handler = CharacterNotes,
-    type = 'group',
-    args = {
-		displayheader = {
-			order = 0,
-			type = "header",
-			name = "General Options",
-		},
-	    minimap = {
-            name = L["Minimap Button"],
-            desc = L["Toggle the minimap button"],
-            type = "toggle",
-            set = "SetMinimapButton",
-            get = "GetMinimapButton",
-			order = 10
-        },
-	    verbose = {
-            name = L["Verbose"],
-            desc = L["Toggles the display of informational messages"],
-            type = "toggle",
-            set = "SetVerbose",
-            get = "GetVerbose",
-			order = 15
-        },
-		displayheader = {
-			order = 20,
-			type = "header",
-			name = L["Tooltip Options"],
-		},
-        wrapTooltip = {
-            name = L["Wrap Tooltips"],
-            desc = L["Wrap notes in tooltips"],
-            type = "toggle",
-            set = "SetWrapTooltip",
-            get = "GetWrapTooltip",
-			order = 30
-        },
-        wrapTooltipLength = {
-            name = L["Tooltip Wrap Length"],
-            desc = L["Maximum line length for a tooltip"],
-            type = "range",
-			min = 20,
-			max = 80,
-			step = 1,
-            set = "SetWrapTooltipLength",
-            get = "GetWrapTooltipLength",
-			order = 40
-        }
-    }
-}
-
+local options
 local noteLDB = nil
 local notesFrame = nil
 local editNoteFrame = nil
 local confirmDeleteFrame = nil
 local notesData = {}
+local previousRaid = {}
+local previousParty = {}
+
+function CharacterNotes:GetOptions()
+    if not options then
+        options = {
+            name = ADDON_NAME,
+            type = 'group',
+            args = {
+        		displayheader = {
+        			order = 0,
+        			type = "header",
+        			name = "General Options",
+        		},
+        	    minimap = {
+                    name = L["Minimap Button"],
+                    desc = L["Toggle the minimap button"],
+                    type = "toggle",
+                    set = function(info,val)
+                        	-- Reverse the value since the stored value is to hide it
+                            self.db.profile.minimap.hide = not value
+                        	if self.db.profile.minimap.hide then
+                        		icon:Hide("CharacterNotesLDB")
+                        	else
+                        		icon:Show("CharacterNotesLDB")
+                        	end
+                          end,
+                    get = function(info)
+                	        -- Reverse the value since the stored value is to hide it
+                            return not self.db.profile.minimap.hide
+                          end,
+        			order = 10
+                },
+        	    verbose = {
+                    name = L["Verbose"],
+                    desc = L["Toggles the display of informational messages"],
+                    type = "toggle",
+                    set = function(info, val) self.db.profile.verbose = val end,
+                    get = function(info) return self.db.profile.verbose end,
+        			order = 15
+                },
+        		displayheader = {
+        			order = 20,
+        			type = "header",
+        			name = L["Tooltip Options"],
+        		},
+                wrapTooltip = {
+                    name = L["Wrap Tooltips"],
+                    desc = L["Wrap notes in tooltips"],
+                    type = "toggle",
+                    set = function(info,val) self.db.profile.wrapTooltip = val end,
+                    get = function(info) return self.db.profile.wrapTooltip end,
+        			order = 30
+                },
+                wrapTooltipLength = {
+                    name = L["Tooltip Wrap Length"],
+                    desc = L["Maximum line length for a tooltip"],
+                    type = "range",
+        			min = 20,
+        			max = 80,
+        			step = 1,
+                    set = function(info,val) self.db.profile.wrapTooltipLength = val end,
+                    get = function(info) return self.db.profile.wrapTooltipLength end,
+        			order = 40
+                },
+        		displayheader2 = {
+        			order = 50,
+        			type = "header",
+        			name = L["Notes for Party and Raid Members"],
+        		},
+                descNotesGroup = {
+                    order = 60,
+                    type = "description",
+                    name = L["These options control if notes are displayed in the chat window for any members who have a note.  Notes are shown when joining a raid or a new member joins."]
+                },
+                notesForPartyMembers = {
+                    name = L["Party Members"],
+                    desc = L["Toggles displaying notes for party members."],
+                    type = "toggle",
+                    set = function(info,val) self.db.profile.notesForPartyMembers = val end,
+                    get = function(info) return self.db.profile.notesForPartyMembers end,
+        			order = 70
+                },
+                notesForRaidMembers = {
+                    name = L["Raid Members"],
+                    desc = L["Toggles displaying notes for raid members."],
+                    type = "toggle",
+                    set = function(info,val) self.db.profile.notesForRaidMembers = val end,
+                    get = function(info) return self.db.profile.notesForRaidMembers end,
+        			order = 80
+                }
+            }
+        }
+    end
+
+    return options
+end
 
 function CharacterNotes:OnInitialize()
     -- Called when the addon is loaded
@@ -94,9 +145,9 @@ function CharacterNotes:OnInitialize()
 	self:BuildTableData()
 
     -- Register the options table
-    LibStub("AceConfig-3.0"):RegisterOptionsTable("CharacterNotes", options)
+    LibStub("AceConfig-3.0"):RegisterOptionsTable("CharacterNotes", self:GetOptions())
 	self.optionsFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(
-	    "CharacterNotes", "Character Notes")
+	    "CharacterNotes", ADDON_NAME)
 
 	self:RegisterChatCommand("setnote", "SetNoteHandler")
 	self:RegisterChatCommand("delnote", "DelNoteHandler")
@@ -133,7 +184,7 @@ function CharacterNotes:SetNoteHandler(input)
 		name = string.gsub(name, "^(%l)", string.upper, 1) --Normalize the name.
 		if #note > 0 then
 			self:SetNote(name, note)
-			if self:GetVerbose() == true then
+			if self.db.profile.verbose == true then
 				local strFormat = L["Set note for %s: %s"]
 				self:Print(strFormat:format(name, note))
 			end
@@ -159,7 +210,7 @@ function CharacterNotes:DelNoteHandler(input)
 	if name and #name > 0 then
 		name = string.gsub(name, "^(%l)", string.upper, 1) --Normalize the name.
 		self:DeleteNote(name)
-		if self:GetVerbose() == true then
+		if self.db.profile.verbose == true then
 			local strFormat = L["Deleted note for %s"]
 			self:Print(strFormat:format(name))
 		end
@@ -492,6 +543,10 @@ function CharacterNotes:OnEnable()
 	-- Register to receive the chat messages to watch for logons and who requests
 	self:RegisterEvent("CHAT_MSG_SYSTEM")
 
+    -- Register for party and raid roster updates
+    self:RegisterEvent("RAID_ROSTER_UPDATE")
+    self:RegisterEvent("PARTY_MEMBERS_CHANGED")
+
 	-- Create the Notes frame for later use
 	notesFrame = self:CreateNotesFrame()
 	
@@ -636,11 +691,11 @@ function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
 		nameString = GetUnitName(unitid, true)
         note = self:GetNote(nameString or name)
         if note then
-			if self:GetWrapTooltip() == false then
+			if self.db.profile.wrapTooltip == false then
             	tooltip:AddLine(YELLOW..L["Note: "]..WHITE..note)
 			else
             	tooltip:AddLine(YELLOW..L["Note: "]..WHITE..
-					wrap(note,self:GetWrapTooltipLength(),"    ","", 4))
+					wrap(note,self.db.profile.wrapTooltipLength,"    ","", 4))
 			end
         end
     end
@@ -676,41 +731,69 @@ function CharacterNotes:CHAT_MSG_SYSTEM(event, message)
 	end
 end
 
-function CharacterNotes:SetMinimapButton(info, value)
-	-- Reverse the value since the stored value is to hide it and not show it
-    self.db.profile.minimap.hide = not value
-	if self.db.profile.minimap.hide then
-		icon:Hide("CharacterNotesLDB")
-	else
-		icon:Show("CharacterNotesLDB")
-	end
+function CharacterNotes:RAID_ROSTER_UPDATE(event, message)
+    local currentRaid = {}
+    local name
+    
+    if GetNumRaidMembers() == 0 then
+        -- Left a raid
+        wipe(previousRaid)
+    else
+        if self.db.profile.notesForRaidMembers == true then
+            for i = 1, GetNumRaidMembers() do
+                name = GetUnitName("raid"..i, true)
+                if name then
+                    currentRaid[name] = true
+
+                    if not previousRaid[name] == true then
+                        if DEBUG == true then
+                            self:Print(name.." joined the raid.")
+                        end
+                        self:DisplayNote(name)
+                    end
+                end
+            end
+
+            -- Set previous raid to the current raid
+            wipe(previousRaid)
+            for name in pairs(currentRaid) do
+                previousRaid[name] = true
+            end
+        end
+    end
 end
 
-function CharacterNotes:GetMinimapButton(info)
-	-- Reverse the value since the stored value is to hide it and not show it
-    return not self.db.profile.minimap.hide
-end
+function CharacterNotes:PARTY_MEMBERS_CHANGED(event, message)
+    -- If in a raid then don't worry about this event.
+    if GetNumRaidMembers() > 0 then return end
+    
+    local currentParty = {}
+    local name
+        
+    if GetNumPartyMembers() == 0 then
+        -- Left a party
+        wipe(previousParty)
+    else
+        if self.db.profile.notesForPartyMembers == true then
+            for i = 1, GetNumPartyMembers() do
+                name = GetUnitName("party"..i, true)
+                if name then
+                    currentParty[name] = true
 
-function CharacterNotes:SetVerbose(info, value)
-    self.db.profile.verbose = value
-end
+                    if not previousParty[name] == true then
+                        if DEBUG == true then
+                            self:Print(name.." joined the party.")
+                        end
+                        self:DisplayNote(name)
+                    end
+                end
+            end
 
-function CharacterNotes:GetVerbose(info)
-    return self.db.profile.verbose
-end
-
-function CharacterNotes:SetWrapTooltip(info, value)
-    self.db.profile.wrapTooltip = value
-end
-
-function CharacterNotes:GetWrapTooltip(info)
-    return self.db.profile.wrapTooltip
-end
-
-function CharacterNotes:SetWrapTooltipLength(info, value)
-    self.db.profile.wrapTooltipLength = value
-end
-
-function CharacterNotes:GetWrapTooltipLength(info)
-    return self.db.profile.wrapTooltipLength
+            -- Set previous party to the current party
+            wipe(previousParty)
+            for name in pairs(currentParty) do
+                previousParty[name] = true
+            end
+        end
+    end
 end

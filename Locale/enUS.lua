@@ -29,6 +29,12 @@ L["Wrap Tooltips"] = true
 L["Wrap notes in tooltips"] = true
 L["Tooltip Wrap Length"] = true
 L["Maximum line length for a tooltip"] = true
+L["Notes for Party and Raid Members"] = true
+L["These options control if notes are displayed in the chat window for any members who have a note.  Notes are shown when joining a raid or a new member joins."] = true
+L["Party Members"] = true
+L["Toggles displaying notes for party members."] = true
+L["Raid Members"] = true
+L["Toggles displaying notes for raid members."] = true
 
 L["Left click"] = true
 L["to open/close the window"] = true
