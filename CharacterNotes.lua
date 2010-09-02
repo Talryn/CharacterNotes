@@ -309,9 +309,9 @@ function CharacterNotes:CreateNotesFrame()
 	searchterm:SetWidth(300)
 	searchterm:SetHeight(35)
 	searchterm:SetPoint("TOPLEFT", noteswindow, "TOPLEFT", 25, -50)
-	searchterm:SetScript("OnShow", function() this:SetFocus() end)
+	searchterm:SetScript("OnShow", function() searchterm:SetFocus() end)
 	searchterm:SetScript("OnEnterPressed", function() notesFrame.table:SortData() end)
-	searchterm:SetScript("OnEscapePressed", function() this:SetText(""); this:GetParent():Hide(); end)
+	searchterm:SetScript("OnEscapePressed", function() searchterm:SetText(""); searchterm:GetParent():Hide(); end)
 
 	table.frame:SetPoint("TOP", searchterm, "BOTTOM", 0, -20)
 	table.frame:SetPoint("LEFT", noteswindow, "LEFT", 20, 0)
@@ -335,7 +335,7 @@ function CharacterNotes:CreateNotesFrame()
 	closebutton:SetWidth(90)
 	closebutton:SetHeight(20)
 	closebutton:SetPoint("BOTTOM", noteswindow, "BOTTOM", 0, 20)
-	closebutton:SetScript("OnClick", function() this:GetParent():Hide(); end)
+	closebutton:SetScript("OnClick", function() closebutton:GetParent():Hide(); end)
 
 	local deletebutton = CreateFrame("Button", nil, noteswindow, "UIPanelButtonTemplate")
 	deletebutton:SetText(L["Delete"])
@@ -437,14 +437,14 @@ function CharacterNotes:CreateConfirmDeleteFrame()
 	deletebutton:SetWidth(100)
 	deletebutton:SetHeight(20)
 	deletebutton:SetPoint("BOTTOM", deletewindow, "BOTTOM", -60, 20)
-	deletebutton:SetScript("OnClick", function() self:DeleteNote(charname:GetText()); this:GetParent():Hide() end)
+	deletebutton:SetScript("OnClick", function() self:DeleteNote(charname:GetText()); deletebutton:GetParent():Hide() end)
 
 	local cancelbutton = CreateFrame("Button", nil, deletewindow, "UIPanelButtonTemplate")
 	cancelbutton:SetText(L["Cancel"])
 	cancelbutton:SetWidth(100)
 	cancelbutton:SetHeight(20)
 	cancelbutton:SetPoint("BOTTOM", deletewindow, "BOTTOM", 60, 20)
-	cancelbutton:SetScript("OnClick", function() this:GetParent():Hide(); end)
+	cancelbutton:SetScript("OnClick", function() cancelbutton:GetParent():Hide(); end)
 
 	deletewindow.charname = charname
 
@@ -471,23 +471,23 @@ function CharacterNotes:CreateEditNoteFrame()
 	editbox:SetWidth(300)
 	editbox:SetHeight(35)
 	editbox:SetPoint("CENTER", editwindow)
-	editbox:SetScript("OnShow", function() this:SetFocus() end)
-	editbox:SetScript("OnEnterPressed", function() self:SaveEditNote(editNoteFrame.charname:GetText(),editNoteFrame.editbox:GetText()); this:GetParent():Hide() end)
-	editbox:SetScript("OnEscapePressed", function() this:SetText(""); this:GetParent():Hide(); end)
+	editbox:SetScript("OnShow", function() editbox:SetFocus() end)
+	editbox:SetScript("OnEnterPressed", function() self:SaveEditNote(editNoteFrame.charname:GetText(),editNoteFrame.editbox:GetText()); editbox:GetParent():Hide() end)
+	editbox:SetScript("OnEscapePressed", function() editbox:SetText(""); editbox:GetParent():Hide(); end)
 
 	local savebutton = CreateFrame("Button", nil, editwindow, "UIPanelButtonTemplate")
 	savebutton:SetText(L["Save"])
 	savebutton:SetWidth(100)
 	savebutton:SetHeight(20)
 	savebutton:SetPoint("BOTTOM", editwindow, "BOTTOM", -60, 20)
-	savebutton:SetScript("OnClick", function() self:SaveEditNote(editNoteFrame.charname:GetText(),editNoteFrame.editbox:GetText()); this:GetParent():Hide() end)
+	savebutton:SetScript("OnClick", function() self:SaveEditNote(editNoteFrame.charname:GetText(),editNoteFrame.editbox:GetText()); savebutton:GetParent():Hide() end)
 
 	local cancelbutton = CreateFrame("Button", nil, editwindow, "UIPanelButtonTemplate")
 	cancelbutton:SetText(L["Cancel"])
 	cancelbutton:SetWidth(100)
 	cancelbutton:SetHeight(20)
 	cancelbutton:SetPoint("BOTTOM", editwindow, "BOTTOM", 60, 20)
-	cancelbutton:SetScript("OnClick", function() this:GetParent():Hide(); end)
+	cancelbutton:SetScript("OnClick", function() cancelbutton:GetParent():Hide(); end)
 
 	local headertext = editwindow:CreateFontString("CN_HeaderText", editwindow, "GameFontNormalLarge")
 	headertext:SetPoint("TOP", editwindow, "TOP", 0, -20)
@@ -596,9 +596,9 @@ function CharacterNotes:RemoveEditNoteMenuItem()
 	self:unhook("UnitPopup_OnClick")
 end
 
-function CharacterNotes:EditNoteMenuClick()
+function CharacterNotes:EditNoteMenuClick(self)
 	local menu = UIDROPDOWNMENU_INIT_MENU
-	local button = this.value
+	local button = self.value
 	if button == "EDIT_NOTE" then
 		local fullname = nil
 		local name = menu.name
