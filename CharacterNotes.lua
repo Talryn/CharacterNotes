@@ -610,7 +610,7 @@ function CharacterNotes:EditNoteMenuClick(self)
 			fullname = name
 		end
 
-		self:EditNoteHandler(fullname)
+		CharacterNotes:EditNoteHandler(fullname)
 	end
 end
 
