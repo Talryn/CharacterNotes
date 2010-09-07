@@ -59,7 +59,7 @@ function CharacterNotes:GetOptions()
                     type = "toggle",
                     set = function(info,val)
                         	-- Reverse the value since the stored value is to hide it
-                            self.db.profile.minimap.hide = not value
+                            self.db.profile.minimap.hide = not val
                         	if self.db.profile.minimap.hide then
                         		icon:Hide("CharacterNotesLDB")
                         	else
