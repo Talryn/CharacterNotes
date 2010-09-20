@@ -678,7 +678,8 @@ function CharacterNotes:SetNote(name, note)
 end
 
 function CharacterNotes:GetNote(name)
-	if self.db.realm.notes then
+	if self.db.realm.notes and name then
+	    name = name:gsub("^(%l)", string.upper, 1)
 		return self.db.realm.notes[name]
 	end
 end
@@ -715,6 +716,7 @@ function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
             if self.db.profile.useLibAlts == true and AltsDB then
                 main = AltsDB:GetMain(name)
                 if main and #main > 0 then
+                    main = main:gsub("^(%l)", string.upper, 1)
                     note = self:GetNote(main)
                 end
             end
@@ -755,6 +757,7 @@ function CharacterNotes:DisplayNote(name)
 	    if self.db.profile.useLibAlts == true and AltsDB then
             main = AltsDB:GetMain(name)
             if main and #main > 0 then
+                main = main:gsub("^(%l)", string.upper, 1)
                 note = self:GetNote(main)
             end
         end
