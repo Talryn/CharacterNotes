@@ -21,7 +21,7 @@ local BLUE = "|cff0198e1"
 local ORANGE = "|cffff9933"
 local WHITE = "|cffffffff"
 
--- Functions that will be defined at the end of the file
+-- Functions defined at the end of the file
 local wrap
 
 -- String formats
