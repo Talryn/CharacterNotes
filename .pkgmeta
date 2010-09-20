@@ -55,5 +55,9 @@ externals:
         url: svn://svn.wowace.com/wow/callbackhandler/mainline/trunk/CallbackHandler-1.0
         tag: latest
 
+    Libs/LibAlts-1.0:
+        url: svn://svn.wowace.com/wow/libalts-1-0/mainline/trunk
+        tag: latest
+
 ignore:
     - .pkgmeta

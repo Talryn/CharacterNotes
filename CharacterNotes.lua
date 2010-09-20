@@ -1,15 +1,19 @@
-local CharacterNotes = LibStub("AceAddon-3.0"):NewAddon("CharacterNotes", "AceConsole-3.0", "AceHook-3.0", "AceEvent-3.0", "AceTimer-3.0")
+CharacterNotes = LibStub("AceAddon-3.0"):NewAddon("CharacterNotes", "AceConsole-3.0", "AceHook-3.0", "AceEvent-3.0", "AceTimer-3.0")
 
 local ADDON_NAME = ...
+local ADDON_VERSION = "@project-version@"
+
+-- Local versions for performance
+local tinsert, tremove = table.insert, table.remove
+local pairs, ipairs = pairs, ipairs
 
 local DEBUG = false
 
 local L = LibStub("AceLocale-3.0"):GetLocale("CharacterNotes", true)
-
 local LibDeformat = LibStub("LibDeformat-3.0")
-
 local LDB = LibStub("LibDataBroker-1.1")
 local icon = LibStub("LibDBIcon-1.0")
+local AltsDB = LibStub("LibAlts-1.0")
 
 local GREEN = "|cff00ff00"
 local YELLOW = "|cffffff00"
@@ -17,12 +21,22 @@ local BLUE = "|cff0198e1"
 local ORANGE = "|cffff9933"
 local WHITE = "|cffffffff"
 
+-- Functions that will be defined at the end of the file
+local wrap
+
+-- String formats
+local chatNoteFormat = YELLOW.."%s: "..WHITE.."%s"
+local chatNoteWithMainFormat = YELLOW.."%s (%s): "..WHITE.."%s"
+local tooltipNoteFormat = YELLOW..L["Note: "]..WHITE.."%s"
+local tooltipNoteWithMainFormat = YELLOW..L["Note"].." (%s): "..WHITE.."%s"
+
 local defaults = {
 	profile = {
 		minimap = {
 			hide = true,
 		},
 		verbose = true,
+		useLibAlts = true,
 		wrapTooltip = true,
 		wrapTooltipLength = 50,
 		notesForRaidMembers = false,
@@ -72,16 +86,24 @@ function CharacterNotes:GetOptions()
                           end,
         			order = 10
                 },
+        	    useLibAlts = {
+                    name = L["Use LibAlts Data"],
+                    desc = L["Toggles the the use of LibAlts data if present.  If present and no note is found for a character, the note for the main will be shown if found."],
+                    type = "toggle",
+                    set = function(info, val) self.db.profile.useLibAlts = val end,
+                    get = function(info) return self.db.profile.useLibAlts end,
+        			order = 20
+                },
         	    verbose = {
                     name = L["Verbose"],
                     desc = L["Toggles the display of informational messages"],
                     type = "toggle",
                     set = function(info, val) self.db.profile.verbose = val end,
                     get = function(info) return self.db.profile.verbose end,
-        			order = 15
+        			order = 30
                 },
         		displayheader = {
-        			order = 20,
+        			order = 100,
         			type = "header",
         			name = L["Tooltip Options"],
         		},
@@ -91,7 +113,7 @@ function CharacterNotes:GetOptions()
                     type = "toggle",
                     set = function(info,val) self.db.profile.wrapTooltip = val end,
                     get = function(info) return self.db.profile.wrapTooltip end,
-        			order = 30
+        			order = 110
                 },
                 wrapTooltipLength = {
                     name = L["Tooltip Wrap Length"],
@@ -102,15 +124,15 @@ function CharacterNotes:GetOptions()
         			step = 1,
                     set = function(info,val) self.db.profile.wrapTooltipLength = val end,
                     get = function(info) return self.db.profile.wrapTooltipLength end,
-        			order = 40
+        			order = 120
                 },
         		displayheader2 = {
-        			order = 50,
+        			order = 200,
         			type = "header",
         			name = L["Notes for Party and Raid Members"],
         		},
                 descNotesGroup = {
-                    order = 60,
+                    order = 210,
                     type = "description",
                     name = L["These options control if notes are displayed in the chat window for any members who have a note.  Notes are shown when joining a raid or a new member joins."]
                 },
@@ -120,7 +142,7 @@ function CharacterNotes:GetOptions()
                     type = "toggle",
                     set = function(info,val) self.db.profile.notesForPartyMembers = val end,
                     get = function(info) return self.db.profile.notesForPartyMembers end,
-        			order = 70
+        			order = 220
                 },
                 notesForRaidMembers = {
                     name = L["Raid Members"],
@@ -128,7 +150,7 @@ function CharacterNotes:GetOptions()
                     type = "toggle",
                     set = function(info,val) self.db.profile.notesForRaidMembers = val end,
                     get = function(info) return self.db.profile.notesForRaidMembers end,
-        			order = 80
+        			order = 230
                 }
             }
         }
@@ -179,7 +201,7 @@ function CharacterNotes:OnInitialize()
 		end,
 		OnTooltipShow = function(tooltip)
 			if tooltip and tooltip.AddLine then
-				tooltip:AddLine(GREEN .. L["Character Notes"])
+				tooltip:AddLine(GREEN .. L["Character Notes"].." "..ADDON_VERSION)
 				tooltip:AddLine(YELLOW .. L["Left click"] .. " " .. WHITE
 					.. L["to open/close the window"])
 				tooltip:AddLine(YELLOW .. L["Right click"] .. " " .. WHITE
@@ -192,8 +214,8 @@ end
 
 function CharacterNotes:SetNoteHandler(input)
 	if input and #input > 0 then
-		local name, note = string.match(input, "^(%S+) *(.*)")
-		name = string.gsub(name, "^(%l)", string.upper, 1) --Normalize the name.
+		local name, note = input:match("^(%S+) *(.*)")
+		name = name:gsub("^(%l)", string.upper, 1)
 		if #note > 0 then
 			self:SetNote(name, note)
 			if self.db.profile.verbose == true then
@@ -209,7 +231,7 @@ end
 function CharacterNotes:DelNoteHandler(input)
 	local name, note = nil, nil
 	if input and #input > 0 then
-		name, note = string.match(input, "^(%S+) *(.*)")
+		name, note = input:match("^(%S+) *(.*)")
 	else
 		if UnitExists("target") and UnitIsPlayer("target") then
 			local target = GetUnitName("target", true)
@@ -220,7 +242,7 @@ function CharacterNotes:DelNoteHandler(input)
 	end
 	
 	if name and #name > 0 then
-		name = string.gsub(name, "^(%l)", string.upper, 1) --Normalize the name.
+		name = name:gsub("^(%l)", string.upper, 1)
 		self:DeleteNote(name)
 		if self.db.profile.verbose == true then
 			local strFormat = L["Deleted note for %s"]
@@ -231,8 +253,8 @@ end
 
 function CharacterNotes:GetNoteHandler(input)
 	if input and #input > 0 then
-		local name, note = string.match(input, "^(%S+) *(.*)")
-		name = string.gsub(name, "^(%l)", string.upper, 1) --Normalize the name.
+		local name, note = input:match("^(%S+) *(.*)")
+		name = name:gsub("^(%l)", string.upper, 1)
 		note = self:GetNote(name)
 		local strFormat = "%s: %s"
 		if note then
@@ -375,11 +397,10 @@ function CharacterNotes:CreateNotesFrame()
 	table:SetData(notesData, true)
 	table:SetFilter(
 		function(self, row)
-			local searchterm = searchterm:GetText()
+			local searchterm = searchterm:GetText():lower()
 			if searchterm and #searchterm > 0 then
-				term = string.lower(searchterm)
-				if string.find(string.lower(row[1]), term) or
-					string.find(string.lower(row[2]), term) then
+				local term = searchterm:lower()
+				if row[1]:lower():find(term) or row[2]:lower():find(term) then
 					return true
 				end
 
@@ -520,7 +541,7 @@ function CharacterNotes:EditNoteHandler(input)
 	end
 	
 	if name and #name > 0 then
-		name = string.gsub(name, "^(%l)", string.upper, 1) --Normalize the name.
+		name = name:gsub("^(%l)", string.upper, 1)
 		
 		local charNote = self:GetNote(name) or ""
 
@@ -585,9 +606,9 @@ function CharacterNotes:AddEditNoteMenuItem()
 
 	self:SecureHook("UnitPopup_OnClick", "EditNoteMenuClick")
 
-	table.insert(UnitPopupMenus["PLAYER"], (#UnitPopupMenus["PLAYER"])-1, "EDIT_NOTE")
-	table.insert(UnitPopupMenus["PARTY"], (#UnitPopupMenus["PARTY"])-1, "EDIT_NOTE")
-	table.insert(UnitPopupMenus["RAID_PLAYER"], (#UnitPopupMenus["RAID_PLAYER"])-1, "EDIT_NOTE")
+	tinsert(UnitPopupMenus["PLAYER"], (#UnitPopupMenus["PLAYER"])-1, "EDIT_NOTE")
+	tinsert(UnitPopupMenus["PARTY"], (#UnitPopupMenus["PARTY"])-1, "EDIT_NOTE")
+	tinsert(UnitPopupMenus["RAID_PLAYER"], (#UnitPopupMenus["RAID_PLAYER"])-1, "EDIT_NOTE")
 end
 
 function CharacterNotes:RemoveEditNoteMenuItem()
@@ -629,7 +650,7 @@ end
 function CharacterNotes:BuildTableData()
 	local key, value = nil, nil
 	for key, value in pairs(self.db.realm.notes) do
-		table.insert(notesData, {key, value})
+		tinsert(notesData, {key, value})
 	end
 end
 
@@ -646,7 +667,7 @@ function CharacterNotes:SetNote(name, note)
 		end
 		
 		if found == false then
-			table.insert(notesData, {name, note})
+			tinsert(notesData, {name, note})
 		end
 
 		-- If the Notes window is shown then we need to update it
@@ -668,7 +689,7 @@ function CharacterNotes:DeleteNote(name)
 		
 		for i, v in ipairs(notesData) do
 			if v[1] == name then
-				table.remove(notesData, i)
+				tremove(notesData, i)
 			end
 		end
 		
@@ -679,36 +700,36 @@ function CharacterNotes:DeleteNote(name)
 	end
 end
 
-function wrap(str, limit, indent, indent1,offset)
-	indent = indent or ""
-	indent1 = indent1 or indent
-	limit = limit or 72
-	offset = offset or 0
-	local here = 1-#indent1-offset
-	return indent1..str:gsub("(%s+)()(%S+)()",
-						function(sp, st, word, fi)
-							if fi-here > limit then
-								here = st - #indent
-								return "\n"..indent..word
-							end
-						end)
-end
-
 function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
+    local main
     local name, unitid = tooltip:GetUnit()
 
 	-- If the unit exists and is a player then check if there is a note for it.
     if UnitExists(unitid) and UnitIsPlayer(unitid) then
 		-- Get the unit's name including the realm name
-		nameString = GetUnitName(unitid, true)
-        note = self:GetNote(nameString or name)
+		name = GetUnitName(unitid, true) or name
+        note = self:GetNote(name)
+        -- If there is no note then check if this character has a main 
+        -- and if so if there is a note for that character.
+        if not note then
+            if self.db.profile.useLibAlts == true and AltsDB then
+                main = AltsDB:GetMain(name)
+                if main and #main > 0 then
+                    note = self:GetNote(main)
+                end
+            end
+        end
+
         if note then
-			if self.db.profile.wrapTooltip == false then
-            	tooltip:AddLine(YELLOW..L["Note: "]..WHITE..note)
-			else
-            	tooltip:AddLine(YELLOW..L["Note: "]..WHITE..
-					wrap(note,self.db.profile.wrapTooltipLength,"    ","", 4))
+			if self.db.profile.wrapTooltip == true then
+			    note = wrap(note,self.db.profile.wrapTooltipLength,"    ","", 4)
 			end
+
+            if main and #main > 0 then
+        	    tooltip:AddLine(tooltipNoteWithMainFormat:format(main, note))
+        	else
+        	    tooltip:AddLine(tooltipNoteFormat:format(note))
+    	    end
         end
     end
 end
@@ -728,9 +749,23 @@ function CharacterNotes:GetFriendNote(friendName)
 end
 
 function CharacterNotes:DisplayNote(name)
+    local main
 	local note = self:GetNote(name)
+	if not note then
+	    if self.db.profile.useLibAlts == true and AltsDB then
+            main = AltsDB:GetMain(name)
+            if main and #main > 0 then
+                note = self:GetNote(main)
+            end
+        end
+    end
+
 	if note then
-		self:Print(YELLOW..name..": "..WHITE..note)
+	    if main and #main > 0 then
+		    self:Print(chatNoteWithMainFormat:format(name, main, note))	        
+        else
+		    self:Print(chatNoteFormat:format(name, note))
+		end
 	end
 end
 
@@ -808,4 +843,19 @@ function CharacterNotes:PARTY_MEMBERS_CHANGED(event, message)
             end
         end
     end
+end
+
+function wrap(str, limit, indent, indent1,offset)
+	indent = indent or ""
+	indent1 = indent1 or indent
+	limit = limit or 72
+	offset = offset or 0
+	local here = 1-#indent1-offset
+	return indent1..str:gsub("(%s+)()(%S+)()",
+						function(sp, st, word, fi)
+							if fi-here > limit then
+								here = st - #indent
+								return "\n"..indent..word
+							end
+						end)
 end
