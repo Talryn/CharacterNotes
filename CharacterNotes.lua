@@ -13,7 +13,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("CharacterNotes", true)
 local LibDeformat = LibStub("LibDeformat-3.0")
 local LDB = LibStub("LibDataBroker-1.1")
 local icon = LibStub("LibDBIcon-1.0")
-local AltsDB = LibStub("LibAlts-1.0")
+local LibAlts = LibStub("LibAlts-1.0")
 
 local GREEN = "|cff00ff00"
 local YELLOW = "|cffffff00"
@@ -256,9 +256,24 @@ function CharacterNotes:GetNoteHandler(input)
 		local name, note = input:match("^(%S+) *(.*)")
 		name = name:gsub("^(%l)", string.upper, 1)
 		note = self:GetNote(name)
-		local strFormat = "%s: %s"
+
+        local main
+        if not note then
+            if self.db.profile.useLibAlts == true and LibAlts then
+                main = LibAlts:GetMain(name)
+                if main and #main > 0 then
+                    main = main:gsub("^(%l)", string.upper, 1)
+                    note = self:GetNote(main)
+                end
+            end
+        end
+        
 		if note then
-			self:Print(strFormat:format(name, note or ""))
+		    if main or #main > 0 then
+			    self:Print(chatNoteWithMainFormat:format(name, main, note or ""))
+	        else
+			    self:Print(chatNoteFormat:format(name, note or ""))
+			end
 		else
 			self:Print(L["No note found for "]..name)
 		end
@@ -713,8 +728,8 @@ function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
         -- If there is no note then check if this character has a main 
         -- and if so if there is a note for that character.
         if not note then
-            if self.db.profile.useLibAlts == true and AltsDB and AltsDB.GetMain then
-                main = AltsDB:GetMain(name)
+            if self.db.profile.useLibAlts == true and LibAlts and LibAlts.GetMain then
+                main = LibAlts:GetMain(name)
                 if main and #main > 0 then
                     main = main:gsub("^(%l)", string.upper, 1)
                     note = self:GetNote(main)
@@ -754,8 +769,8 @@ function CharacterNotes:DisplayNote(name)
     local main
 	local note = self:GetNote(name)
 	if not note then
-	    if self.db.profile.useLibAlts == true and AltsDB and AltsDB.GetMain then
-            main = AltsDB:GetMain(name)
+	    if self.db.profile.useLibAlts == true and LibAlts and LibAlts.GetMain then
+            main = LibAlts:GetMain(name)
             if main and #main > 0 then
                 main = main:gsub("^(%l)", string.upper, 1)
                 note = self:GetNote(main)
