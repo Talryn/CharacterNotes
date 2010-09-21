@@ -713,7 +713,7 @@ function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
         -- If there is no note then check if this character has a main 
         -- and if so if there is a note for that character.
         if not note then
-            if self.db.profile.useLibAlts == true and AltsDB then
+            if self.db.profile.useLibAlts == true and AltsDB and AltsDB.GetMain then
                 main = AltsDB:GetMain(name)
                 if main and #main > 0 then
                     main = main:gsub("^(%l)", string.upper, 1)
@@ -754,7 +754,7 @@ function CharacterNotes:DisplayNote(name)
     local main
 	local note = self:GetNote(name)
 	if not note then
-	    if self.db.profile.useLibAlts == true and AltsDB then
+	    if self.db.profile.useLibAlts == true and AltsDB and AltsDB.GetMain then
             main = AltsDB:GetMain(name)
             if main and #main > 0 then
                 main = main:gsub("^(%l)", string.upper, 1)
