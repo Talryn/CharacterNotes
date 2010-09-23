@@ -259,7 +259,7 @@ function CharacterNotes:GetNoteHandler(input)
 
         local main
         if not note then
-            if self.db.profile.useLibAlts == true and LibAlts then
+            if self.db.profile.useLibAlts == true and LibAlts and LibAlts.GetMain then
                 main = LibAlts:GetMain(name)
                 if main and #main > 0 then
                     main = main:gsub("^(%l)", string.upper, 1)
