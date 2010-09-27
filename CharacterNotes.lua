@@ -398,7 +398,7 @@ function CharacterNotes:CreateNotesFrame()
 	clearbutton:SetPoint("LEFT", searchbutton, "RIGHT", 10, 0)
 	clearbutton:SetScript("OnClick",
 	    function(this)
-	        this:SetText("")
+	        searchterm:SetText("")
 	        this:GetParent().table:SortData()
 	    end)
 
