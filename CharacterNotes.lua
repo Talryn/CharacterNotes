@@ -36,6 +36,9 @@ local defaults = {
 			hide = true,
 		},
 		verbose = true,
+		showNotesOnWho = true,
+		showNotesOnLogon = true,
+		showNotesInTooltips = true,
 		useLibAlts = true,
 		wrapTooltip = true,
 		wrapTooltipLength = 50,
@@ -86,13 +89,29 @@ function CharacterNotes:GetOptions()
                           end,
         			order = 10
                 },
+        	    showNotesOnWho = {
+                    name = L["Show notes with who results"],
+                    desc = L["Toggles showing notes for /who results in the chat window."],
+                    type = "toggle",
+                    set = function(info, val) self.db.profile.showNotesOnWho = val end,
+                    get = function(info) return self.db.profile.showNotesOnWho end,
+        			order = 20
+                },
+        	    showNotesOnLogon = {
+                    name = L["Show notes at logon"],
+                    desc = L["Toggles showing notes when a friend or guild memeber logs on."],
+                    type = "toggle",
+                    set = function(info, val) self.db.profile.showNotesOnLogon = val end,
+                    get = function(info) return self.db.profile.showNotesOnLogon end,
+        			order = 30
+                },
         	    useLibAlts = {
                     name = L["Use LibAlts Data"],
-                    desc = L["Toggles the the use of LibAlts data if present.  If present and no note is found for a character, the note for the main will be shown if found."],
+                    desc = L["Toggles the use of LibAlts data if present.  If present and no note is found for a character, the note for the main will be shown if found."],
                     type = "toggle",
                     set = function(info, val) self.db.profile.useLibAlts = val end,
                     get = function(info) return self.db.profile.useLibAlts end,
-        			order = 20
+        			order = 40
                 },
         	    verbose = {
                     name = L["Verbose"],
@@ -100,20 +119,28 @@ function CharacterNotes:GetOptions()
                     type = "toggle",
                     set = function(info, val) self.db.profile.verbose = val end,
                     get = function(info) return self.db.profile.verbose end,
-        			order = 30
+        			order = 50
                 },
         		displayheader = {
         			order = 100,
         			type = "header",
         			name = L["Tooltip Options"],
         		},
+        	    showNotesInTooltips = {
+                    name = L["Show notes in tooltips"],
+                    desc = L["Toggles showing notes in unit tooltips."],
+                    type = "toggle",
+                    set = function(info, val) self.db.profile.showNotesInTooltips = val end,
+                    get = function(info) return self.db.profile.showNotesInTooltips end,
+        			order = 110
+                },
                 wrapTooltip = {
                     name = L["Wrap Tooltips"],
                     desc = L["Wrap notes in tooltips"],
                     type = "toggle",
                     set = function(info,val) self.db.profile.wrapTooltip = val end,
                     get = function(info) return self.db.profile.wrapTooltip end,
-        			order = 110
+        			order = 120
                 },
                 wrapTooltipLength = {
                     name = L["Tooltip Wrap Length"],
@@ -124,7 +151,7 @@ function CharacterNotes:GetOptions()
         			step = 1,
                     set = function(info,val) self.db.profile.wrapTooltipLength = val end,
                     get = function(info) return self.db.profile.wrapTooltipLength end,
-        			order = 120
+        			order = 130
                 },
         		displayheader2 = {
         			order = 200,
@@ -216,7 +243,7 @@ function CharacterNotes:SetNoteHandler(input)
 	if input and #input > 0 then
 		local name, note = input:match("^(%S+) *(.*)")
 		name = name:gsub("^(%l)", string.upper, 1)
-		if #note > 0 then
+		if note and #note > 0 then
 			self:SetNote(name, note)
 			if self.db.profile.verbose == true then
 				local strFormat = L["Set note for %s: %s"]
@@ -269,7 +296,7 @@ function CharacterNotes:GetNoteHandler(input)
         end
         
 		if note then
-		    if main or #main > 0 then
+		    if main and #main > 0 then
 			    self:Print(chatNoteWithMainFormat:format(name, main, note or ""))
 	        else
 			    self:Print(chatNoteFormat:format(name, note or ""))
@@ -717,6 +744,8 @@ function CharacterNotes:DeleteNote(name)
 end
 
 function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
+    if self.db.profile.showNotesInTooltips == false then return end
+
     local main
     local name, unitid = tooltip:GetUnit()
 
@@ -765,7 +794,7 @@ function CharacterNotes:GetFriendNote(friendName)
 	return ""
 end
 
-function CharacterNotes:DisplayNote(name)
+function CharacterNotes:DisplayNote(name, type)
     local main
 	local note = self:GetNote(name)
 	if not note then
@@ -788,11 +817,25 @@ function CharacterNotes:DisplayNote(name)
 end
 
 function CharacterNotes:CHAT_MSG_SYSTEM(event, message)
-	local name = LibDeformat(message, WHO_LIST_FORMAT)
-	if not name then name = LibDeformat(message, WHO_LIST_GUILD_FORMAT) end
-	if not name then name = LibDeformat(message, ERR_FRIEND_ONLINE_SS) end
+	local name, type
+
+    if self.db.profile.showNotesOnWho == true then
+	    name = LibDeformat(message, WHO_LIST_FORMAT)
+	    type = "WHO"
+    end
+
+	if not name and self.db.profile.showNotesOnWho == true then 
+	    name = LibDeformat(message, WHO_LIST_GUILD_FORMAT)
+	    type = "WHO"
+	end
+
+	if not name and self.db.profile.showNotesOnLogon == true then
+	    name = LibDeformat(message, ERR_FRIEND_ONLINE_SS)
+	    type = "LOGON"
+	end
+
 	if name then
-		self:ScheduleTimer("DisplayNote", 0.1, name)
+		self:ScheduleTimer("DisplayNote", 0.1, name, type)
 	end
 end
 
