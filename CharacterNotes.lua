@@ -205,6 +205,7 @@ function CharacterNotes:OnInitialize()
 	self:RegisterChatCommand("editnote", "EditNoteHandler")
 	self:RegisterChatCommand("notes", "NotesHandler")
 	self:RegisterChatCommand("searchnote", "NotesHandler")
+	self:RegisterChatCommand("notesdbcheck", "NotesDBCheckHandler")
 
 	-- Create the LDB launcher
 	noteLDB = LDB:NewDataObject("CharacterNotes",{
@@ -243,7 +244,7 @@ end
 function CharacterNotes:SetNoteHandler(input)
 	if input and #input > 0 then
 		local name, note = input:match("^(%S+) *(.*)")
-		name = name:gsub("^(%l)", string.upper, 1)
+		name = formatCharName(name)
 		if note and #note > 0 then
 			self:SetNote(name, note)
 			if self.db.profile.verbose == true then
@@ -270,7 +271,7 @@ function CharacterNotes:DelNoteHandler(input)
 	end
 	
 	if name and #name > 0 then
-		name = name:gsub("^(%l)", string.upper, 1)
+		name = formatCharName(name)
 		self:DeleteNote(name)
 		if self.db.profile.verbose == true then
 			local strFormat = L["Deleted note for %s"]
@@ -282,7 +283,7 @@ end
 function CharacterNotes:GetNoteHandler(input)
 	if input and #input > 0 then
 		local name, note = input:match("^(%S+) *(.*)")
-		name = name:gsub("^(%l)", string.upper, 1)
+		name = formatCharName(name)
 		note = self:GetNote(name)
 
         local main
@@ -290,7 +291,7 @@ function CharacterNotes:GetNoteHandler(input)
             if self.db.profile.useLibAlts == true and LibAlts and LibAlts.GetMain then
                 main = LibAlts:GetMain(name)
                 if main and #main > 0 then
-                    main = main:gsub("^(%l)", string.upper, 1)
+                    main = formatCharName(main)
                     note = self:GetNote(main)
                 end
             end
@@ -480,6 +481,20 @@ function CharacterNotes:NotesHandler(input)
 	notesFrame:Show()
 end
 
+function CharacterNotes:NotesDBCheckHandler(input)
+    for name, note in pairs(self.db.realm.notes) do
+        if name then
+            if name ~= formatCharName(name) then
+                self:Print("Name "..name.." doesn't match the formatted name.")
+            end
+        else
+            self:Print("Found a note with a nil name value. ["..note or "nil".."]")
+        end
+    end
+    
+    self:Print("Note DB Check finished.")
+end
+
 function CharacterNotes:CreateConfirmDeleteFrame()
 	local deletewindow = CreateFrame("Frame", "CharacterNotesConfirmDeleteWindow", UIParent)
 	deletewindow:SetFrameStrata("DIALOG")
@@ -612,7 +627,7 @@ function CharacterNotes:EditNoteHandler(input)
 	end
 	
 	if name and #name > 0 then
-		name = name:gsub("^(%l)", string.upper, 1)
+		name = formatCharName(name)
 		
 		local charNote = self:GetNote(name) or ""
 
@@ -727,6 +742,7 @@ end
 
 function CharacterNotes:SetNote(name, note)
 	if self.db.realm.notes then
+	    name = formatCharName(name)
 		self.db.realm.notes[name] = note;
 		
 		local found = false
@@ -750,7 +766,7 @@ end
 
 function CharacterNotes:GetNote(name)
 	if self.db.realm.notes and name then
-	    name = name:gsub("^(%l)", string.upper, 1)
+	    name = formatCharName(name)
 		return self.db.realm.notes[name]
 	end
 end
@@ -789,7 +805,7 @@ function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
             if self.db.profile.useLibAlts == true and LibAlts and LibAlts.GetMain then
                 main = LibAlts:GetMain(name)
                 if main and #main > 0 then
-                    main = main:gsub("^(%l)", string.upper, 1)
+                    main = formatCharName(main)
                     note = self:GetNote(main)
                 end
             end
@@ -831,7 +847,7 @@ function CharacterNotes:DisplayNote(name, type)
 	    if self.db.profile.useLibAlts == true and LibAlts and LibAlts.GetMain then
             main = LibAlts:GetMain(name)
             if main and #main > 0 then
-                main = main:gsub("^(%l)", string.upper, 1)
+                main = formatCharName(main)
                 note = self:GetNote(main)
             end
         end
@@ -938,9 +954,7 @@ end
 
 function formatCharName(name)
     local MULTIBYTE_FIRST_CHAR = "^([\192-\255]?%a?[\128-\191]*)"
-    if not name then
-        return ""
-    end
+    if not name then return "" end
     
     -- Change the string up to a - to lower case.
     -- Limiting it in case a server name is present in the name.
