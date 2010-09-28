@@ -23,6 +23,7 @@ local WHITE = "|cffffffff"
 
 -- Functions defined at the end of the file.
 local wrap
+local formatCharName
 
 -- String formats
 local chatNoteFormat = YELLOW.."%s: "..WHITE.."%s"
@@ -136,7 +137,7 @@ function CharacterNotes:GetOptions()
                 },
                 wrapTooltip = {
                     name = L["Wrap Tooltips"],
-                    desc = L["Wrap notes in tooltips"],
+                    desc = L["Wrap notes in tooltips at the specified line length.  Subsequent lines are indented."],
                     type = "toggle",
                     set = function(info,val) self.db.profile.wrapTooltip = val end,
                     get = function(info) return self.db.profile.wrapTooltip end,
@@ -802,7 +803,8 @@ function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
             if main and #main > 0 then
         	    tooltip:AddLine(tooltipNoteWithMainFormat:format(main, note))
         	else
-        	    tooltip:AddLine(tooltipNoteFormat:format(note))
+        	    tooltip:AddLine(tooltipNoteFormat:format(note), 
+        	        1, 1, 1, not self.db.profile.wrapTooltip)
     	    end
         end
     end
@@ -932,6 +934,20 @@ function CharacterNotes:PARTY_MEMBERS_CHANGED(event, message)
             end
         end
     end
+end
+
+function formatCharName(name)
+    local MULTIBYTE_FIRST_CHAR = "^([\192-\255]?%a?[\128-\191]*)"
+    if not name then
+        return ""
+    end
+    
+    -- Change the string up to a - to lower case.
+    -- Limiting it in case a server name is present in the name.
+    name = name:gsub("^([^%-]+)", string.lower)
+    -- Change the first character to uppercase accounting for multibyte characters.
+    name = name:gsub(MULTIBYTE_FIRST_CHAR, string.upper, 1)
+    return name
 end
 
 function wrap(str, limit, indent, indent1,offset)
