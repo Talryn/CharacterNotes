@@ -741,7 +741,7 @@ function CharacterNotes:BuildTableData()
 end
 
 function CharacterNotes:SetNote(name, note)
-	if self.db.realm.notes then
+	if self.db.realm.notes and name then
 	    name = formatCharName(name)
 		self.db.realm.notes[name] = note;
 		
@@ -772,7 +772,7 @@ function CharacterNotes:GetNote(name)
 end
 
 function CharacterNotes:DeleteNote(name)
-	if self.db.realm.notes then
+	if self.db.realm.notes and name then
 		self.db.realm.notes[name] = nil;
 		
 		for i, v in ipairs(notesData) do
@@ -842,12 +842,12 @@ end
 
 function CharacterNotes:DisplayNote(name, type)
     local main
+    name = formatCharName(name)
 	local note = self:GetNote(name)
 	if not note then
 	    if self.db.profile.useLibAlts == true and LibAlts and LibAlts.GetMain then
-            main = LibAlts:GetMain(name)
+            main = formatCharName(LibAlts:GetMain(name))
             if main and #main > 0 then
-                main = formatCharName(main)
                 note = self:GetNote(main)
             end
         end
