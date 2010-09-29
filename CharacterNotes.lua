@@ -37,6 +37,7 @@ local defaults = {
 			hide = true,
 		},
 		verbose = true,
+		mouseoverHighlighting = true,
 		showNotesOnWho = true,
 		showNotesOnLogon = true,
 		showNotesInTooltips = true,
@@ -114,13 +115,26 @@ function CharacterNotes:GetOptions()
                     get = function(info) return self.db.profile.useLibAlts end,
         			order = 40
                 },
+        	    mouseoverHighlighting = {
+                    name = L["Mouseover Highlighting"],
+                    desc = L["Toggles mouseover highlighting for tables."],
+                    type = "toggle",
+                    set = function(info, val)
+                            self.db.profile.mouseoverHighlighting = val
+                            self:UpdateMouseoverHighlighting(val)
+                        end,
+                    get = function(info)
+                            return self.db.profile.mouseoverHighlighting
+                        end,
+        			order = 50
+                },
         	    verbose = {
                     name = L["Verbose"],
                     desc = L["Toggles the display of informational messages"],
                     type = "toggle",
                     set = function(info, val) self.db.profile.verbose = val end,
                     get = function(info) return self.db.profile.verbose end,
-        			order = 50
+        			order = 60
                 },
         		displayheader = {
         			order = 100,
@@ -309,6 +323,24 @@ function CharacterNotes:GetNoteHandler(input)
 	end	
 end
 
+function CharacterNotes:UpdateMouseoverHighlighting(enabled)
+    if notesFrame and notesFrame.table then
+        local table = notesFrame.table
+        if enabled then
+    	    table:RegisterEvents(table.DefaultEvents)
+        else
+        	table:RegisterEvents({
+        		["OnEnter"] = function (rowFrame, cellFrame, data, cols, row, realrow, column, table, ...)
+        			return true;
+        		end,
+        		["OnLeave"] = function(rowFrame, cellFrame, data, cols, row, realrow, column, table, ...)
+        			return true;
+        		end
+        	})
+        end
+    end
+end
+
 function CharacterNotes:CreateNotesFrame()
 	local noteswindow = CreateFrame("Frame", "CharacterNotesWindow", UIParent)
 	noteswindow:SetFrameStrata("DIALOG")
@@ -446,7 +478,20 @@ function CharacterNotes:CreateNotesFrame()
 
 	noteswindow.table = table
 	noteswindow.searchterm = searchterm
-	
+
+    if self.db.profile.mouseoverHighlighting then
+	    table:RegisterEvents(table.DefaultEvents)
+	else
+    	table:RegisterEvents({
+    		["OnEnter"] = function (rowFrame, cellFrame, data, cols, row, realrow, column, table, ...)
+    			return true;
+    		end,
+    		["OnLeave"] = function(rowFrame, cellFrame, data, cols, row, realrow, column, table, ...)
+    			return true;
+    		end
+    	})
+    end
+
 	table:EnableSelection(true)
 	table:SetData(notesData, true)
 	table:SetFilter(
