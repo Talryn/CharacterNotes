@@ -232,12 +232,15 @@ function CharacterNotes:OnInitialize()
     			if optionsFrame:IsVisible() then
     				optionsFrame:Hide()
     			else
+    			    self:HideNotesWindow()
     				InterfaceOptionsFrame_OpenToCategory(self.optionsFrame)
     			end
     		elseif button == "LeftButton" then
     			if self:IsNotesVisible() then
     				self:HideNotesWindow()
     			else
+        			local optionsFrame = InterfaceOptionsFrame
+    			    optionsFrame:Hide()
     				self:NotesHandler("")
     			end
             end
