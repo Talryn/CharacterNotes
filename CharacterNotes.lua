@@ -497,6 +497,7 @@ function CharacterNotes:CreateNotesFrame()
 				if row[1] and #row[1] > 0 then
 					confirmDeleteFrame.charname:SetText(row[1])
 					confirmDeleteFrame:Show()
+					confirmDeleteFrame:Raise()
 				end
 			end
 		end)
@@ -593,6 +594,7 @@ function CharacterNotes:NotesHandler(input)
 
 	notesFrame.table:SortData()
 	notesFrame:Show()
+	notesFrame:Raise()
 end
 
 function CharacterNotes:NotesDBCheckHandler(input)
@@ -654,6 +656,18 @@ function CharacterNotes:CreateConfirmDeleteFrame()
 	cancelbutton:SetScript("OnClick", function(this) this:GetParent():Hide(); end)
 
 	deletewindow.charname = charname
+
+    deletewindow:SetMovable()
+    deletewindow:RegisterForDrag("LeftButton")
+    deletewindow:SetScript("OnDragStart",
+        function(this,button)
+        	this:StartMoving()
+        end)
+    deletewindow:SetScript("OnDragStop",
+        function(this)
+            this:StopMovingOrSizing()
+        end)
+    deletewindow:EnableMouse(true)
 
 	deletewindow:Hide()
 
@@ -722,6 +736,18 @@ function CharacterNotes:CreateEditNoteFrame()
 	editwindow.charname = charname
 	editwindow.editbox = editbox
 
+    editwindow:SetMovable()
+    editwindow:RegisterForDrag("LeftButton")
+    editwindow:SetScript("OnDragStart",
+        function(this,button)
+        	this:StartMoving()
+        end)
+    editwindow:SetScript("OnDragStop",
+        function(this)
+            this:StopMovingOrSizing()
+        end)
+    editwindow:EnableMouse(true)
+
 	editwindow:Hide()
 
 	return editwindow
@@ -750,6 +776,7 @@ function CharacterNotes:EditNoteHandler(input)
 		editwindow.editbox:SetText(charNote)
 
 		editwindow:Show()
+		editwindow:Raise()
 	end	
 end
 
