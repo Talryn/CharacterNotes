@@ -71,7 +71,7 @@ function CharacterNotes:GetOptions()
             name = ADDON_NAME,
             type = 'group',
             args = {
-        		displayheader = {
+        		headerGeneralOptions = {
         			order = 0,
         			type = "header",
         			name = "General Options",
@@ -95,29 +95,13 @@ function CharacterNotes:GetOptions()
                           end,
         			order = 10
                 },
-        	    showNotesOnWho = {
-                    name = L["Show notes with who results"],
-                    desc = L["Toggles showing notes for /who results in the chat window."],
-                    type = "toggle",
-                    set = function(info, val) self.db.profile.showNotesOnWho = val end,
-                    get = function(info) return self.db.profile.showNotesOnWho end,
-        			order = 20
-                },
-        	    showNotesOnLogon = {
-                    name = L["Show notes at logon"],
-                    desc = L["Toggles showing notes when a friend or guild memeber logs on."],
-                    type = "toggle",
-                    set = function(info, val) self.db.profile.showNotesOnLogon = val end,
-                    get = function(info) return self.db.profile.showNotesOnLogon end,
-        			order = 30
-                },
         	    useLibAlts = {
                     name = L["Use LibAlts Data"],
                     desc = L["Toggles the use of LibAlts data if present.  If present and no note is found for a character, the note for the main will be shown if found."],
                     type = "toggle",
                     set = function(info, val) self.db.profile.useLibAlts = val end,
                     get = function(info) return self.db.profile.useLibAlts end,
-        			order = 40
+        			order = 20
                 },
         	    mouseoverHighlighting = {
                     name = L["Mouseover Highlighting"],
@@ -130,7 +114,7 @@ function CharacterNotes:GetOptions()
                     get = function(info)
                             return self.db.profile.mouseoverHighlighting
                         end,
-        			order = 50
+        			order = 30
                 },
         	    verbose = {
                     name = L["Verbose"],
@@ -138,10 +122,31 @@ function CharacterNotes:GetOptions()
                     type = "toggle",
                     set = function(info, val) self.db.profile.verbose = val end,
                     get = function(info) return self.db.profile.verbose end,
-        			order = 60
+        			order = 40
                 },
-        		displayheader = {
+                headerNoteDisplay = {
         			order = 100,
+        			type = "header",
+        			name = L["Note Display"],
+                },
+        	    showNotesOnWho = {
+                    name = L["Show notes with who results"],
+                    desc = L["Toggles showing notes for /who results in the chat window."],
+                    type = "toggle",
+                    set = function(info, val) self.db.profile.showNotesOnWho = val end,
+                    get = function(info) return self.db.profile.showNotesOnWho end,
+        			order = 110
+                },
+        	    showNotesOnLogon = {
+                    name = L["Show notes at logon"],
+                    desc = L["Toggles showing notes when a friend or guild memeber logs on."],
+                    type = "toggle",
+                    set = function(info, val) self.db.profile.showNotesOnLogon = val end,
+                    get = function(info) return self.db.profile.showNotesOnLogon end,
+        			order = 120
+                },
+        		headerTooltipOptions = {
+        			order = 200,
         			type = "header",
         			name = L["Tooltip Options"],
         		},
@@ -151,7 +156,7 @@ function CharacterNotes:GetOptions()
                     type = "toggle",
                     set = function(info, val) self.db.profile.showNotesInTooltips = val end,
                     get = function(info) return self.db.profile.showNotesInTooltips end,
-        			order = 110
+        			order = 210
                 },
                 wrapTooltip = {
                     name = L["Wrap Tooltips"],
@@ -159,7 +164,7 @@ function CharacterNotes:GetOptions()
                     type = "toggle",
                     set = function(info,val) self.db.profile.wrapTooltip = val end,
                     get = function(info) return self.db.profile.wrapTooltip end,
-        			order = 120
+        			order = 220
                 },
                 wrapTooltipLength = {
                     name = L["Tooltip Wrap Length"],
@@ -170,15 +175,39 @@ function CharacterNotes:GetOptions()
         			step = 1,
                     set = function(info,val) self.db.profile.wrapTooltipLength = val end,
                     get = function(info) return self.db.profile.wrapTooltipLength end,
-        			order = 130
+        			order = 230
                 },
-        		displayheader2 = {
-        			order = 200,
+        		headerMainWindow = {
+        			order = 300,
+        			type = "header",
+        			name = L["Notes Window"],
+        		},
+                lock_main_window = {
+                    name = L["Lock"],
+                    desc = L["Lock_OptionDesc"],
+                    type = "toggle",
+                    set = function(info,val)
+                        self.db.profile.lock_main_window = val
+                        notesFrame.lock = val
+                    end,
+                    get = function(info) return self.db.profile.lock_main_window end,
+        			order = 310
+                },
+                remember_main_pos = {
+                    name = L["Remember Position"],
+                    desc = L["RememberPosition_OptionDesc"],
+                    type = "toggle",
+                    set = function(info,val) self.db.profile.remember_main_pos = val end,
+                    get = function(info) return self.db.profile.remember_main_pos end,
+        			order = 320
+                },
+        		headerPartyRaid = {
+        			order = 400,
         			type = "header",
         			name = L["Notes for Party and Raid Members"],
         		},
                 descNotesGroup = {
-                    order = 210,
+                    order = 410,
                     type = "description",
                     name = L["These options control if notes are displayed in the chat window for any members who have a note.  Notes are shown when joining a raid or a new member joins."]
                 },
@@ -188,7 +217,7 @@ function CharacterNotes:GetOptions()
                     type = "toggle",
                     set = function(info,val) self.db.profile.notesForPartyMembers = val end,
                     get = function(info) return self.db.profile.notesForPartyMembers end,
-        			order = 220
+        			order = 420
                 },
                 notesForRaidMembers = {
                     name = L["Raid Members"],
@@ -196,7 +225,7 @@ function CharacterNotes:GetOptions()
                     type = "toggle",
                     set = function(info,val) self.db.profile.notesForRaidMembers = val end,
                     get = function(info) return self.db.profile.notesForRaidMembers end,
-        			order = 230
+        			order = 430
                 }
             }
         }
