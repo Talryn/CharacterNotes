@@ -45,7 +45,11 @@ local defaults = {
 		wrapTooltip = true,
 		wrapTooltipLength = 50,
 		notesForRaidMembers = false,
-		notesForPartyMembers = false
+		notesForPartyMembers = false,
+		lock_main_window = false,
+		remember_main_pos = true,
+		notes_window_x = 0,
+		notes_window_y = 0
 	},
 	realm = {
 	    notes = {}
@@ -350,7 +354,12 @@ function CharacterNotes:CreateNotesFrame()
 	noteswindow:SetToplevel(true)
 	noteswindow:SetWidth(630)
 	noteswindow:SetHeight(430)
-	noteswindow:SetPoint("CENTER", UIParent)
+	if self.db.profile.remember_main_pos then
+    	noteswindow:SetPoint("CENTER", UIParent, "CENTER", 
+    	    self.db.profile.notes_window_x, self.db.profile.notes_window_y)
+    else
+    	noteswindow:SetPoint("CENTER", UIParent)
+    end
 	noteswindow:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background", 
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
 		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
@@ -512,7 +521,35 @@ function CharacterNotes:CreateNotesFrame()
 			end
 		end
 	)
-	
+
+    noteswindow.lock = self.db.profile.lock_main_window
+    
+    noteswindow:SetMovable()
+    noteswindow:RegisterForDrag("LeftButton")
+    noteswindow:SetScript("OnDragStart",
+        function(self,button)
+			if not self.lock then
+            	self:StartMoving()
+			end
+        end)
+    noteswindow:SetScript("OnDragStop",
+        function(self)
+            self:StopMovingOrSizing()
+			if CharacterNotes.db.profile.remember_main_pos then
+    			local scale = self:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    			local x, y = self:GetCenter()
+    			x, y = x * scale, y * scale
+    			x = x - GetScreenWidth()/2
+    			y = y - GetScreenHeight()/2
+    			x = x / self:GetScale()
+    			y = y / self:GetScale()
+    			CharacterNotes.db.profile.notes_window_x, 
+    			    CharacterNotes.db.profile.notes_window_y = x, y
+    			self:SetUserPlaced(false);
+            end
+        end)
+    noteswindow:EnableMouse(true)
+
 	noteswindow:Hide()
 	
 	return noteswindow
