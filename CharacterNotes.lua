@@ -6,6 +6,7 @@ local ADDON_VERSION = "@project-version@"
 -- Local versions for performance
 local tinsert, tremove = table.insert, table.remove
 local pairs, ipairs = pairs, ipairs
+local sub = string.sub
 
 local DEBUG = false
 
@@ -41,6 +42,7 @@ local defaults = {
 		showNotesOnWho = true,
 		showNotesOnLogon = true,
 		showNotesInTooltips = true,
+		noteLinksInChat = true,
 		useLibAlts = true,
 		wrapTooltip = true,
 		wrapTooltipLength = 50,
@@ -129,13 +131,28 @@ function CharacterNotes:GetOptions()
         			type = "header",
         			name = L["Note Display"],
                 },
+        	    noteLinksInChat = {
+                    name = L["Note Links"],
+                    desc = L["NoteLinks_OptionDesc"],
+                    type = "toggle",
+                    set = function(info, val)
+                            self.db.profile.noteLinksInChat = val
+                            if val then
+                                self:EnableNoteLinks()
+                            else
+                                self:DisableNoteLinks()
+                            end
+                        end,
+                    get = function(info) return self.db.profile.noteLinksInChat end,
+        			order = 110
+                },
         	    showNotesOnWho = {
                     name = L["Show notes with who results"],
                     desc = L["Toggles showing notes for /who results in the chat window."],
                     type = "toggle",
                     set = function(info, val) self.db.profile.showNotesOnWho = val end,
                     get = function(info) return self.db.profile.showNotesOnWho end,
-        			order = 110
+        			order = 120
                 },
         	    showNotesOnLogon = {
                     name = L["Show notes at logon"],
@@ -143,7 +160,7 @@ function CharacterNotes:GetOptions()
                     type = "toggle",
                     set = function(info, val) self.db.profile.showNotesOnLogon = val end,
                     get = function(info) return self.db.profile.showNotesOnLogon end,
-        			order = 120
+        			order = 130
                 },
         		headerTooltipOptions = {
         			order = 200,
@@ -818,6 +835,26 @@ function CharacterNotes:OnEnable()
 	
 	-- Add the Edit Note menu item on unit frames
 	self:AddEditNoteMenuItem()
+
+    -- Enable note links
+    self:EnableNoteLinks()
+end
+
+function CharacterNotes:EnableNoteLinks()
+    if self.db.profile.noteLinkInChat then
+        -- Hook SetItemRef to create our own hyperlinks
+    	self:RawHook(nil, "SetItemRef", true)
+    	-- Hook SetHyperlink so we can redirect charnote links
+    	self:RawHook(ItemRefTooltip, "SetHyperlink", true)
+        -- Hook chat frames so we can edit the messages
+        self:HookChatFrames()
+    end
+end
+
+function CharacterNotes:DisableNoteLinks()
+	self:Unhook(nil, "SetItemRef")
+	self:Unhook(ItemRefTooltip, "SetHyperlink")
+    self:UnhookChatFrames()
 end
 
 function CharacterNotes:OnDisable()
@@ -826,6 +863,38 @@ function CharacterNotes:OnDisable()
 	
 	-- Remove the menu items
 	self:RemoveEditNoteMenuItem()
+end
+
+local noteLinkFmt = YELLOW.."|Hcharnote:%s|h[%s]|h|r"
+function CharacterNotes:CreateNoteLink(name, text)
+    return noteLinkFmt:format(name, text)
+end
+
+local tipFmt = YELLOW.."%s: "..WHITE.."%s"
+function CharacterNotes:SetItemRef(link, text, button)
+	if link and link:match("^charnote:") then
+		local name = sub(link, 10)
+		name = formatCharName(name)
+		local note = self:GetNote(name) or ""
+		-- Display a link
+        ShowUIPanel(ItemRefTooltip)
+        if (not ItemRefTooltip:IsVisible()) then
+            ItemRefTooltip:SetOwner(UIParent, "ANCHOR_PRESERVE")
+        end
+        ItemRefTooltip:ClearLines()
+        ItemRefTooltip:AddLine(tipFmt:format(name, note), 1, 1, 1, 1)
+        ItemRefTooltip:SetBackdropBorderColor(1, 1, 1, 1)
+        local icon = ItemRefTooltipIcon
+        if icon then icon:SetTexture("") end
+        ItemRefTooltip:Show()
+		return nil
+	end
+	return self.hooks.SetItemRef(link, text, button)
+end
+
+function CharacterNotes:SetHyperlink(frame, link, ...)
+    if link and link:match("^charnote:") then return end
+    return self.hooks[frame].SetHyperlink(frame, link, ...)
 end
 
 function CharacterNotes:AddEditNoteMenuItem()
@@ -1001,6 +1070,43 @@ function CharacterNotes:DisplayNote(name, type)
 		    self:Print(chatNoteFormat:format(name, note))
 		end
 	end
+end
+
+function CharacterNotes:HookChatFrames()
+    for i = 1, NUM_CHAT_WINDOWS do
+        local chatFrame = _G["ChatFrame" .. i]
+        if chatFrame ~= COMBATLOG then
+            self:RawHook(chatFrame, "AddMessage", true)
+        end
+    end
+end
+
+function CharacterNotes:UnhookChatFrames()
+    for i = 1, NUM_CHAT_WINDOWS do
+        local chatFrame = _G["ChatFrame" .. i]
+        if chatFrame ~= COMBATLOG then
+            self:Unhook(chatFrame, "AddMessage")
+        end
+    end
+end
+
+local function AddNoteForChat(message, name)
+    if name and #name > 0 then
+        local note = CharacterNotes:GetNote(name)
+        if note and #note > 0 then
+            local messageFmt = "%s %s"
+            return messageFmt:format(message, CharacterNotes:CreateNoteLink(name,"note"))
+        end
+    end
+    
+    return message
+end
+
+function CharacterNotes:AddMessage(frame, text, ...)
+    if text and type(text) == "string" then
+        text = text:gsub("(|Hplayer:([^:]+).-|h.-|h)", AddNoteForChat)
+    end
+    return self.hooks[frame].AddMessage(frame, text, ...)
 end
 
 function CharacterNotes:CHAT_MSG_SYSTEM(event, message)
