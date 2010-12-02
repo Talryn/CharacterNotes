@@ -904,6 +904,8 @@ function CharacterNotes:AddEditNoteMenuItem()
 
 	tinsert(UnitPopupMenus["PLAYER"], (#UnitPopupMenus["PLAYER"])-1, "EDIT_NOTE")
 	tinsert(UnitPopupMenus["PARTY"], (#UnitPopupMenus["PARTY"])-1, "EDIT_NOTE")
+	tinsert(UnitPopupMenus["FRIEND"], (#UnitPopupMenus["FRIEND"])-1, "EDIT_NOTE")
+	tinsert(UnitPopupMenus["FRIEND_OFFLINE"], (#UnitPopupMenus["FRIEND_OFFLINE"])-1, "EDIT_NOTE")
 	tinsert(UnitPopupMenus["RAID_PLAYER"], (#UnitPopupMenus["RAID_PLAYER"])-1, "EDIT_NOTE")
 end
 
