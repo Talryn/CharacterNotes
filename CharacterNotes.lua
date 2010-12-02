@@ -841,7 +841,7 @@ function CharacterNotes:OnEnable()
 end
 
 function CharacterNotes:EnableNoteLinks()
-    if self.db.profile.noteLinkInChat then
+    if self.db.profile.noteLinksInChat then
         -- Hook SetItemRef to create our own hyperlinks
     	self:RawHook(nil, "SetItemRef", true)
     	-- Hook SetHyperlink so we can redirect charnote links
