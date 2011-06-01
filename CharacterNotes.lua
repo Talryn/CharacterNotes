@@ -887,7 +887,7 @@ function CharacterNotes:CreateNoteLink(name, text)
 end
 
 local tipFmt = YELLOW.."%s: "..WHITE.."%s"
-function CharacterNotes:SetItemRef(link, text, button)
+function CharacterNotes:SetItemRef(link, text, button, ...)
 	if link and link:match("^charnote:") then
 		local name = sub(link, 10)
 		name = formatCharName(name)
@@ -905,7 +905,7 @@ function CharacterNotes:SetItemRef(link, text, button)
         ItemRefTooltip:Show()
 		return nil
 	end
-	return self.hooks.SetItemRef(link, text, button)
+	return self.hooks.SetItemRef(link, text, button, ...)
 end
 
 function CharacterNotes:SetHyperlink(frame, link, ...)
