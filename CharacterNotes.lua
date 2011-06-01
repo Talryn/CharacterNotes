@@ -306,6 +306,22 @@ function CharacterNotes:OnInitialize()
 		end
 	})
 	icon:Register("CharacterNotesLDB", noteLDB, self.db.profile.minimap)
+	
+	-- Hook any new temporary windows
+	self:SecureHook("FCF_SetTemporaryWindowType")
+	self:SecureHook("FCF_Close")
+end
+
+function CharacterNotes:FCF_SetTemporaryWindowType(chatFrame, chatType, chatTarget)
+	if chatFrame and not self:IsHooked(chatFrame, "AddMessage") then
+	    self:RawHook(chatFrame, "AddMessage", true)
+    end
+end
+
+function CharacterNotes:FCF_Close(frame, fallback)
+    if frame and self:IsHooked(frame, "AddMessage") then
+        self:Unhook(frame, "AddMessage")
+    end
 end
 
 function CharacterNotes:SetNoteHandler(input)
@@ -1074,7 +1090,25 @@ function CharacterNotes:DisplayNote(name, type)
 	end
 end
 
+local ChatMsgsToHook = {
+    "CHAT_MSG_BATTLEGROUND",
+    "CHAT_MSG_BATTLEGROUND_LEADER",
+    "CHAT_MSG_CHANNEL",
+    "CHAT_MSG_GUILD",
+    "CHAT_MSG_OFFICER",
+    "CHAT_MSG_PARTY",
+    "CHAT_MSG_RAID",
+    "CHAT_MSG_RAID_LEADER",
+    "CHAT_MSG_SAY",
+    "CHAT_MSG_WHISPER"
+}
 function CharacterNotes:HookChatFrames()
+    --for i, event in ipairs(ChatMsgsToHook) do
+    --    if event and #event > 0 then
+    --        ChatFrame_AddMessageEventFilter(event, MyAddMessage)
+    --    end
+    --end
+
     for i = 1, NUM_CHAT_WINDOWS do
         local chatFrame = _G["ChatFrame" .. i]
         if chatFrame ~= COMBATLOG then
@@ -1084,6 +1118,12 @@ function CharacterNotes:HookChatFrames()
 end
 
 function CharacterNotes:UnhookChatFrames()
+    --for i, event in ipairs(ChatMsgsToHook) do
+    --    if event and #event > 0 then
+    --        ChatFrame_RemoveMessageEventFilter(event, MyAddMessage)
+    --    end
+    --end
+
     for i = 1, NUM_CHAT_WINDOWS do
         local chatFrame = _G["ChatFrame" .. i]
         if chatFrame ~= COMBATLOG then
@@ -1104,11 +1144,18 @@ local function AddNoteForChat(message, name)
     return message
 end
 
-function CharacterNotes:AddMessage(frame, text, ...)
+--function MyAddMessage(self, event, msg, ...)
+--    if msg and type(msg) == "string" then
+--        msg = msg:gsub("(|Hplayer:([^:]+).-|h.-|h)", AddNoteForChat)
+--    end
+--    return false, msg, ...
+--end
+
+function CharacterNotes:AddMessage(frame, text, r, g, b, id, ...)
     if text and type(text) == "string" then
         text = text:gsub("(|Hplayer:([^:]+).-|h.-|h)", AddNoteForChat)
     end
-    return self.hooks[frame].AddMessage(frame, text, ...)
+    return self.hooks[frame].AddMessage(frame, text, r, g, b, id, ...)
 end
 
 function CharacterNotes:CHAT_MSG_SYSTEM(event, message)
