@@ -859,9 +859,13 @@ end
 function CharacterNotes:EnableNoteLinks()
     if self.db.profile.noteLinksInChat then
         -- Hook SetItemRef to create our own hyperlinks
-    	self:RawHook(nil, "SetItemRef", true)
+        if not self:IsHooked(nil, "SetItemRef") then
+    	    self:RawHook(nil, "SetItemRef", true)
+        end
     	-- Hook SetHyperlink so we can redirect charnote links
-    	self:RawHook(ItemRefTooltip, "SetHyperlink", true)
+        if not self:IsHooked(ItemRefTooltip, "SetHyperlink") then
+    	    self:RawHook(ItemRefTooltip, "SetHyperlink", true)
+        end
         -- Hook chat frames so we can edit the messages
         self:HookChatFrames()
     end
@@ -879,11 +883,6 @@ function CharacterNotes:OnDisable()
 	
 	-- Remove the menu items
 	self:RemoveEditNoteMenuItem()
-end
-
-local noteLinkFmt = YELLOW.."|Hcharnote:%s|h[%s]|h|r"
-function CharacterNotes:CreateNoteLink(name, text)
-    return noteLinkFmt:format(name, text)
 end
 
 local tipFmt = YELLOW.."%s: "..WHITE.."%s"
@@ -1090,46 +1089,29 @@ function CharacterNotes:DisplayNote(name, type)
 	end
 end
 
-local ChatMsgsToHook = {
-    "CHAT_MSG_BATTLEGROUND",
-    "CHAT_MSG_BATTLEGROUND_LEADER",
-    "CHAT_MSG_CHANNEL",
-    "CHAT_MSG_GUILD",
-    "CHAT_MSG_OFFICER",
-    "CHAT_MSG_PARTY",
-    "CHAT_MSG_RAID",
-    "CHAT_MSG_RAID_LEADER",
-    "CHAT_MSG_SAY",
-    "CHAT_MSG_WHISPER"
-}
 function CharacterNotes:HookChatFrames()
-    --for i, event in ipairs(ChatMsgsToHook) do
-    --    if event and #event > 0 then
-    --        ChatFrame_AddMessageEventFilter(event, MyAddMessage)
-    --    end
-    --end
-
     for i = 1, NUM_CHAT_WINDOWS do
         local chatFrame = _G["ChatFrame" .. i]
         if chatFrame ~= COMBATLOG then
-            self:RawHook(chatFrame, "AddMessage", true)
+            if not self:IsHooked(chatFrame, "AddMessage") then
+                self:RawHook(chatFrame, "AddMessage", true)
+            end
         end
     end
 end
 
 function CharacterNotes:UnhookChatFrames()
-    --for i, event in ipairs(ChatMsgsToHook) do
-    --    if event and #event > 0 then
-    --        ChatFrame_RemoveMessageEventFilter(event, MyAddMessage)
-    --    end
-    --end
-
     for i = 1, NUM_CHAT_WINDOWS do
         local chatFrame = _G["ChatFrame" .. i]
         if chatFrame ~= COMBATLOG then
             self:Unhook(chatFrame, "AddMessage")
         end
     end
+end
+
+local noteLinkFmt = YELLOW.."|Hcharnote:%s|h[%s]|h|r"
+function CharacterNotes:CreateNoteLink(name, text)
+    return noteLinkFmt:format(name, text)
 end
 
 local function AddNoteForChat(message, name)
@@ -1144,16 +1126,12 @@ local function AddNoteForChat(message, name)
     return message
 end
 
---function MyAddMessage(self, event, msg, ...)
---    if msg and type(msg) == "string" then
---        msg = msg:gsub("(|Hplayer:([^:]+).-|h.-|h)", AddNoteForChat)
---    end
---    return false, msg, ...
---end
-
 function CharacterNotes:AddMessage(frame, text, r, g, b, id, ...)
     if text and type(text) == "string" then
-        text = text:gsub("(|Hplayer:([^:]+).-|h.-|h)", AddNoteForChat)
+        -- If no charnotes are present then insert one.
+        if text:find("|Hcharnote:") == nil then
+            text = text:gsub("(|Hplayer:([^:]+).-|h.-|h)", AddNoteForChat)
+        end
     end
     return self.hooks[frame].AddMessage(frame, text, r, g, b, id, ...)
 end
