@@ -22,6 +22,8 @@ local BLUE = "|cff0198e1"
 local ORANGE = "|cffff9933"
 local WHITE = "|cffffffff"
 
+local CharNoteTooltip = nil
+
 -- Functions defined at the end of the file.
 local wrap
 local formatCharName
@@ -51,7 +53,11 @@ local defaults = {
 		lock_main_window = false,
 		remember_main_pos = true,
 		notes_window_x = 0,
-		notes_window_y = 0
+		notes_window_y = 0,
+		remember_tooltip_pos = true,
+		lock_tooltip = false,
+		note_tooltip_x = nil,
+		note_tooltip_y = nil
 	},
 	realm = {
 	    notes = {}
@@ -161,6 +167,29 @@ function CharacterNotes:GetOptions()
                     set = function(info, val) self.db.profile.showNotesOnLogon = val end,
                     get = function(info) return self.db.profile.showNotesOnLogon end,
         			order = 130
+                },
+                headerNoteLinks = {
+        			order = 150,
+        			type = "header",
+        			name = L["Note Links"],
+                },
+                lock_note_tooltip = {
+                    name = L["Lock"],
+                    desc = L["LockNoteTooltip_OptionDesc"],
+                    type = "toggle",
+                    set = function(info,val)
+                        self.db.profile.lock_tooltip = val
+                    end,
+                    get = function(info) return self.db.profile.lock_tooltip end,
+        			order = 160
+                },
+                remember_tooltip_pos = {
+                    name = L["Remember Position"],
+                    desc = L["RememberPositionNoteTooltip_OptionDesc"],
+                    type = "toggle",
+                    set = function(info,val) self.db.profile.remember_tooltip_pos = val end,
+                    get = function(info) return self.db.profile.remember_tooltip_pos end,
+        			order = 170
                 },
         		headerTooltipOptions = {
         			order = 200,
@@ -307,9 +336,62 @@ function CharacterNotes:OnInitialize()
 	})
 	icon:Register("CharacterNotesLDB", noteLDB, self.db.profile.minimap)
 	
+	if not CharNoteTooltip then
+	    self:CreateCharNoteTooltip()
+    end
+
 	-- Hook any new temporary windows
 	self:SecureHook("FCF_SetTemporaryWindowType")
 	self:SecureHook("FCF_Close")
+end
+
+function CharacterNotes:CreateCharNoteTooltip()
+    CharNoteTooltip = CreateFrame("GameTooltip", "CharNoteTooltip", UIParent, "GameTooltipTemplate")
+    CharNoteTooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
+	CharNoteTooltip:SetFrameStrata("DIALOG")
+    CharNoteTooltip:SetSize(100,100)
+    CharNoteTooltip:SetPadding(16)
+    if self.db.profile.remember_tooltip_pos == false or self.db.profile.tooltip_x == nil or self.db.profile.tooltip_y == nil then
+        CharNoteTooltip:SetPoint("TOPLEFT", "ChatFrame1", "TOPRIGHT", 20, 0)
+    else
+        CharNoteTooltip:SetPoint("CENTER", UIParent, "CENTER", self.db.profile.tooltip_x, self.db.profile.tooltip_y)
+    end
+	CharNoteTooltip:EnableMouse(true)
+	CharNoteTooltip:SetToplevel(true)
+    CharNoteTooltip:SetMovable(true)
+    GameTooltip_OnLoad(CharNoteTooltip)
+    CharNoteTooltip:SetUserPlaced(false)
+
+	CharNoteTooltip:RegisterForDrag("LeftButton")
+	CharNoteTooltip:SetScript("OnDragStart", function(self)
+	    if not CharacterNotes.db.profile.lock_tooltip then
+		    self:StartMoving()
+		end
+	end)
+	CharNoteTooltip:SetScript("OnDragStop", function(self)
+		self:StopMovingOrSizing()
+		local scale = self:GetEffectiveScale() / UIParent:GetEffectiveScale()
+		local x, y = self:GetCenter()
+		x, y = x * scale, y * scale
+		x = x - GetScreenWidth()/2
+		y = y - GetScreenHeight()/2
+		x = x / self:GetScale()
+		y = y / self:GetScale()
+		CharacterNotes.db.profile.tooltip_x, CharacterNotes.db.profile.tooltip_y = x, y
+		self:SetUserPlaced(false);
+	end)
+	
+	local closebutton = CreateFrame("Button", "CharNoteTooltipCloseButton", CharNoteTooltip)
+	closebutton:SetSize(32,32)
+	closebutton:SetPoint("TOPRIGHT", 1, 0)
+
+	closebutton:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
+	closebutton:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
+	closebutton:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight", "ADD")
+	
+	closebutton:SetScript("OnClick", function(self)
+	    HideUIPanel(CharNoteTooltip)
+	end)
 end
 
 function CharacterNotes:FCF_SetTemporaryWindowType(chatFrame, chatType, chatTarget)
@@ -885,23 +967,21 @@ function CharacterNotes:OnDisable()
 	self:RemoveEditNoteMenuItem()
 end
 
-local tipFmt = YELLOW.."%s: "..WHITE.."%s"
 function CharacterNotes:SetItemRef(link, text, button, ...)
 	if link and link:match("^charnote:") then
 		local name = sub(link, 10)
 		name = formatCharName(name)
 		local note = self:GetNote(name) or ""
 		-- Display a link
-        ShowUIPanel(ItemRefTooltip)
-        if (not ItemRefTooltip:IsVisible()) then
-            ItemRefTooltip:SetOwner(UIParent, "ANCHOR_PRESERVE")
+        ShowUIPanel(CharNoteTooltip)
+        if (not CharNoteTooltip:IsVisible()) then
+            CharNoteTooltip:SetOwner(UIParent, "ANCHOR_PRESERVE")
         end
-        ItemRefTooltip:ClearLines()
-        ItemRefTooltip:AddLine(tipFmt:format(name, note), 1, 1, 1, 1)
-        ItemRefTooltip:SetBackdropBorderColor(1, 1, 1, 1)
-        local icon = ItemRefTooltipIcon
-        if icon then icon:SetTexture("") end
-        ItemRefTooltip:Show()
+        CharNoteTooltip:ClearLines()
+        CharNoteTooltip:AddLine(name, 1, 1, 0)
+        CharNoteTooltip:AddLine(note, 1, 1, 1, true)
+        CharNoteTooltip:SetBackdropBorderColor(1, 1, 1, 1)
+        CharNoteTooltip:Show()
 		return nil
 	end
 	return self.hooks.SetItemRef(link, text, button, ...)
