@@ -11,16 +11,18 @@ local sub = string.sub
 local DEBUG = false
 
 local L = LibStub("AceLocale-3.0"):GetLocale("CharacterNotes", true)
+local AGU = LibStub("AceGUI-3.0")
 local LibDeformat = LibStub("LibDeformat-3.0")
 local LDB = LibStub("LibDataBroker-1.1")
 local icon = LibStub("LibDBIcon-1.0")
 local LibAlts = LibStub("LibAlts-1.0")
 
-local GREEN = "|cff00ff00"
+local GREEN =  "|cff00ff00"
 local YELLOW = "|cffffff00"
-local BLUE = "|cff0198e1"
+local RED =    "|cffff0000"
+local BLUE =   "|cff0198e1"
 local ORANGE = "|cffff9933"
-local WHITE = "|cffffffff"
+local WHITE =  "|cffffffff"
 
 local CharNoteTooltip = nil
 
@@ -29,10 +31,10 @@ local wrap
 local formatCharName
 
 -- String formats
-local chatNoteFormat = YELLOW.."%s: "..WHITE.."%s"
-local chatNoteWithMainFormat = YELLOW.."%s (%s): "..WHITE.."%s"
-local tooltipNoteFormat = YELLOW..L["Note: "]..WHITE.."%s"
-local tooltipNoteWithMainFormat = YELLOW..L["Note"].." (%s): "..WHITE.."%s"
+local chatNoteFormat = "%s%s: "..WHITE.."%s".."|r"
+local chatNoteWithMainFormat = "%s%s (%s): "..WHITE.."%s".."|r"
+local tooltipNoteFormat = "%s"..L["Note: "]..WHITE.."%s".."|r"
+local tooltipNoteWithMainFormat = "%s"..L["Note"].." (%s): "..WHITE.."%s".."|r"
 
 local defaults = {
 	profile = {
@@ -60,7 +62,8 @@ local defaults = {
 		note_tooltip_y = nil
 	},
 	realm = {
-	    notes = {}
+	    notes = {},
+	    ratings = {}
 	}
 }
 
@@ -72,6 +75,23 @@ local confirmDeleteFrame = nil
 local notesData = {}
 local previousRaid = {}
 local previousParty = {}
+
+local RATING_OPTIONS = {
+    [-1] = {"Negative", RED},
+    [0] = {"Neutral", YELLOW},
+    [1] = {"Positive", GREEN},
+}
+
+local function GetRatingColor(rating)
+    local color = YELLOW
+    if rating ~= nil and rating >= -1 and rating <= 1 then
+        local ratingInfo = RATING_OPTIONS[rating]
+        if ratingInfo and ratingInfo[2] then
+            color = ratingInfo[2]
+        end
+    end
+    return color
+end
 
 function CharacterNotes:GetOptions()
     if not options then
@@ -294,6 +314,7 @@ function CharacterNotes:OnInitialize()
 
 	self:RegisterChatCommand("setnote", "SetNoteHandler")
 	self:RegisterChatCommand("delnote", "DelNoteHandler")
+	self:RegisterChatCommand("delrating", "DelRatingHandler")
 	self:RegisterChatCommand("getnote", "GetNoteHandler")
 	self:RegisterChatCommand("editnote", "EditNoteHandler")
 	self:RegisterChatCommand("notes", "NotesHandler")
@@ -445,28 +466,43 @@ function CharacterNotes:DelNoteHandler(input)
 	end	
 end
 
+function CharacterNotes:DelRatingHandler(input)
+	local name, note = nil, nil
+	if input and #input > 0 then
+		name, note = input:match("^(%S+) *(.*)")
+	else
+		if UnitExists("target") and UnitIsPlayer("target") then
+			local target = GetUnitName("target", true)
+			if target and #target > 0 then
+				name = target
+			end
+		end
+	end
+	
+	if name and #name > 0 then
+		name = formatCharName(name)
+		self:DeleteRating(name)
+		if self.db.profile.verbose == true then
+			local strFormat = L["Deleted rating for %s"]
+			self:Print(strFormat:format(name))
+		end
+	end	
+end
+
 function CharacterNotes:GetNoteHandler(input)
 	if input and #input > 0 then
 		local name, note = input:match("^(%S+) *(.*)")
 		name = formatCharName(name)
-		note = self:GetNote(name)
 
-        local main
-        if not note then
-            if self.db.profile.useLibAlts == true and LibAlts and LibAlts.GetMain then
-                main = LibAlts:GetMain(name)
-                if main and #main > 0 then
-                    main = formatCharName(main)
-                    note = self:GetNote(main)
-                end
-            end
-        end
-        
+        local note, rating, main = self:GetInfoForNameOrMain(name)
+
 		if note then
 		    if main and #main > 0 then
-			    self:Print(chatNoteWithMainFormat:format(name, main, note or ""))
+			    self:Print(chatNoteWithMainFormat:format(
+			        GetRatingColor(rating), name, main, note or ""))
 	        else
-			    self:Print(chatNoteFormat:format(name, note or ""))
+			    self:Print(chatNoteFormat:format(
+			        GetRatingColor(rating), name, note or ""))
 			end
 		else
 			self:Print(L["No note found for "]..name)
@@ -794,31 +830,13 @@ function CharacterNotes:CreateEditNoteFrame()
 	editwindow:SetFrameStrata("DIALOG")
 	editwindow:SetToplevel(true)
 	editwindow:SetWidth(400)
-	editwindow:SetHeight(200)
+	editwindow:SetHeight(280)
 	editwindow:SetPoint("CENTER", UIParent)
 	editwindow:SetBackdrop(
 		{bgFile="Interface\\ChatFrame\\ChatFrameBackground", 
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
 		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
 	editwindow:SetBackdropColor(0,0,0,1)
-		
-	local editbox = CreateFrame("EditBox", nil, editwindow, "InputBoxTemplate")
-	editbox:SetFontObject(ChatFontNormal)
-	editbox:SetWidth(300)
-	editbox:SetHeight(35)
-	editbox:SetPoint("CENTER", editwindow)
-	editbox:SetScript("OnShow", function(this) editbox:SetFocus() end)
-	editbox:SetScript("OnEnterPressed",
-	    function(this)
-	        local frame = this:GetParent()
-	        self:SaveEditNote(frame.charname:GetText(),frame.editbox:GetText())
-	        frame:Hide()
-	    end)
-	editbox:SetScript("OnEscapePressed",
-	    function(this)
-	        this:SetText("")
-	        this:GetParent():Hide()
-	    end)
 
 	local savebutton = CreateFrame("Button", nil, editwindow, "UIPanelButtonTemplate")
 	savebutton:SetText(L["Save"])
@@ -828,7 +846,8 @@ function CharacterNotes:CreateEditNoteFrame()
 	savebutton:SetScript("OnClick",
 	    function(this)
 	        local frame = this:GetParent()
-	        self:SaveEditNote(frame.charname:GetText(),frame.editbox:GetText())
+	        local rating = UIDropDownMenu_GetSelectedValue(editwindow.ratingDropdown)
+	        self:SaveEditNote(frame.charname:GetText(),frame.editbox:GetText(), rating)
 	        frame:Hide()
 	    end)
 
@@ -848,8 +867,86 @@ function CharacterNotes:CreateEditNoteFrame()
 	charname:SetFont(charname:GetFont(), 14)
 	charname:SetTextColor(1.0,1.0,1.0,1)
 
+	local ratingLabel = editwindow:CreateFontString("CN_RatingLabel", editwindow, "GameFontNormal")
+	ratingLabel:SetPoint("TOP", charname, "BOTTOM", 0, -30)
+	ratingLabel:SetPoint("LEFT", editwindow, "LEFT", 20, 0)
+	ratingLabel:SetTextColor(1.0,1.0,1.0,1)
+    ratingLabel:SetText("Rating:")
+
+    local ratingDropdown = CreateFrame("Button", "CN_RatingDropDown", editwindow, "UIDropDownMenuTemplate")
+    ratingDropdown:ClearAllPoints()
+    ratingDropdown:SetPoint("TOPLEFT", ratingLabel, "TOPRIGHT", 7, 5)
+    ratingDropdown:Show()
+    UIDropDownMenu_Initialize(ratingDropdown, function(self, level)
+        local info = nil
+        for i = -1, 1 do
+            info = UIDropDownMenu_CreateInfo()
+            local ratingInfo = RATING_OPTIONS[i]
+            info.text = ratingInfo[1]
+            info.value = i
+            info.colorCode = ratingInfo[2]
+            info.func = function(self) 
+                UIDropDownMenu_SetSelectedValue(ratingDropdown, self.value)
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
+    UIDropDownMenu_SetWidth(ratingDropdown, 100);
+    UIDropDownMenu_SetButtonWidth(ratingDropdown, 124)
+    UIDropDownMenu_SetSelectedValue(ratingDropdown, 0)
+    UIDropDownMenu_JustifyText(ratingDropdown, "LEFT")
+
+    local editBoxContainer = CreateFrame("Frame", nil, editwindow)
+    editBoxContainer:SetPoint("TOPLEFT", editwindow, "TOPLEFT", 20, -150)
+    editBoxContainer:SetPoint("BOTTOMRIGHT", editwindow, "BOTTOMRIGHT", -40, 50)
+	editBoxContainer:SetBackdrop(
+		{bgFile="Interface\\Tooltips\\UI-Tooltip-Background", 
+	    edgeFile="Interface\\Tooltips\\UI-Tooltip-Border", tile=true,
+		tileSize=16, edgeSize=16, insets={left=4, right=3, top=4, bottom=3}})
+	editBoxContainer:SetBackdropColor(0,0,0,0.9)
+
+    local scrollArea = CreateFrame("ScrollFrame", "CN_EditNote_EditScroll", editwindow, "UIPanelScrollFrameTemplate")
+    scrollArea:SetPoint("TOPLEFT", editBoxContainer, "TOPLEFT", 6, -6)
+    scrollArea:SetPoint("BOTTOMRIGHT", editBoxContainer, "BOTTOMRIGHT", -6, 6)
+
+	local editbox = CreateFrame("EditBox", "CN_EditNote_EditBox", editwindow)
+	editbox:SetFontObject(ChatFontNormal)
+	editbox:SetMultiLine(true)
+	editbox:SetAutoFocus(true)
+	editbox:SetWidth(300)
+	editbox:SetHeight(5*14)
+	editbox:SetMaxLetters(0)
+	editbox:SetScript("OnShow", function(this) editbox:SetFocus() end)
+	editbox:SetScript("OnEnterPressed",
+	    function(this)
+	        local frame = this:GetParent():GetParent()
+	        local rating = UIDropDownMenu_GetSelectedValue(editwindow.ratingDropdown)
+	        self:SaveEditNote(frame.charname:GetText(),frame.editbox:GetText(),rating)
+	        frame:Hide()
+	    end)
+	editbox:SetScript("OnEscapePressed",
+	    function(this)
+	        this:SetText("")
+	        this:GetParent():GetParent():Hide()
+	    end)
+	editbox.scrollArea = scrollArea
+    editbox:SetScript("OnCursorChanged", function(self, _, y, _, cursorHeight)
+    	self, y = self.scrollArea, -y
+    	local offset = self:GetVerticalScroll()
+    	if y < offset then
+    		self:SetVerticalScroll(y)
+    	else
+    		y = y + cursorHeight - self:GetHeight()
+    		if y > offset then
+    			self:SetVerticalScroll(y)
+    		end
+    	end
+    end)
+    scrollArea:SetScrollChild(editbox)
+
 	editwindow.charname = charname
 	editwindow.editbox = editbox
+	editwindow.ratingDropdown = ratingDropdown
 
     editwindow:SetMovable()
     editwindow:RegisterForDrag("LeftButton")
@@ -866,6 +963,54 @@ function CharacterNotes:CreateEditNoteFrame()
 	editwindow:Hide()
 
 	return editwindow
+end
+
+local EditNoteFrame = nil
+function CharacterNotes:ShowEditNoteFrame(name, note)
+    if EditNoteFrame then return end
+
+    local frame = AGU:Create("Frame")
+    frame:SetTitle(L["Edit Note"])
+    frame:SetWidth(400)
+    frame:SetHeight(250)
+    frame:SetLayout("Flow")
+	frame:SetCallback("OnClose", function(widget)
+		widget:ReleaseChildren()
+		widget:Release()
+		EditNoteFrame = nil
+	end)
+    EditNoteFrame = frame
+
+    local text =  AGU:Create("Label")
+    text:SetText(name)
+    text:SetFont(GameFontNormalLarge:GetFont())
+    text.label:SetJustifyH("CENTER")
+    text:SetFullWidth(true)
+    text:SetCallback("OnRelease",
+        function(widget)
+            widget.label:SetJustifyH("LEFT")
+        end
+    )
+    frame:AddChild(text)
+
+    local spacer = AGU:Create("Label")
+    spacer:SetFullWidth(true)
+    spacer:SetText(" ")
+    frame:AddChild(spacer)
+
+    local editbox = AGU:Create("MultiLineEditBox")
+    editbox:SetFullWidth(true)
+    editbox:SetText(note)
+    editbox:SetLabel(L["Note"])
+    editbox:SetNumLines(5)
+    editbox:SetMaxLetters(0)
+    editbox:SetFocus()
+    editbox.editBox:HighlightText()
+	editbox:SetCallback("OnEnterPressed", function(widget, event, noteText)
+        CharacterNotes:SaveEditNote(name, noteText)
+    end)
+    frame:AddChild(editbox)
+
 end
 
 function CharacterNotes:EditNoteHandler(input)
@@ -885,6 +1030,7 @@ function CharacterNotes:EditNoteHandler(input)
 		name = formatCharName(name)
 		
 		local charNote = self:GetNote(name) or ""
+		local rating = self:GetRating(name) or 0
 
 		local editwindow = editNoteFrame
 		editwindow.charname:SetText(name)
@@ -892,12 +1038,22 @@ function CharacterNotes:EditNoteHandler(input)
 
 		editwindow:Show()
 		editwindow:Raise()
+
+		UIDropDownMenu_SetSelectedValue(editwindow.ratingDropdown, rating)
+        local ratingInfo = RATING_OPTIONS[rating]
+        if ratingInfo and ratingInfo[1] and ratingInfo[2] then
+		    UIDropDownMenu_SetText(editwindow.ratingDropdown, ratingInfo[2]..ratingInfo[1].."|r")
+        end
 	end	
 end
 
-function CharacterNotes:SaveEditNote(name, note)
+function CharacterNotes:SaveEditNote(name, note, rating)
 	if name and #name > 0 and note and #note > 0 then
 		self:SetNote(name, note)
+
+        if rating then
+            self:SetRating(name, rating)
+        end
 	end
 
 	local editwindow = editNoteFrame
@@ -907,8 +1063,6 @@ function CharacterNotes:SaveEditNote(name, note)
 end
 
 function CharacterNotes:OnEnable()
-    -- Called when the addon is enabled
-
     -- Hook the game tooltip so we can add character Notes
     self:HookScript(GameTooltip, "OnTooltipSetUnit")
 
@@ -1071,10 +1225,24 @@ function CharacterNotes:SetNote(name, note)
 	end
 end
 
+function CharacterNotes:SetRating(name, rating)
+	if self.db.realm.ratings and name and rating >= -1 and rating <= 1 then
+	    name = formatCharName(name)
+		self.db.realm.ratings[name] = rating
+    end
+end
+
 function CharacterNotes:GetNote(name)
 	if self.db.realm.notes and name then
 	    name = formatCharName(name)
 		return self.db.realm.notes[name]
+	end
+end
+
+function CharacterNotes:GetRating(name)
+	if self.db.realm.ratings and name then
+	    name = formatCharName(name)
+		return self.db.realm.ratings[name]
 	end
 end
 
@@ -1095,28 +1263,55 @@ function CharacterNotes:DeleteNote(name)
 	end
 end
 
+function CharacterNotes:DeleteRating(name)
+	if self.db.realm.ratings and name then
+		self.db.realm.ratings[name] = nil;
+		
+		--for i, v in ipairs(notesData) do
+		--	if v[1] == name then
+		--		tremove(notesData, i)
+		--	end
+		--end
+		
+		-- If the Notes window is shown then we need to update it
+		--if notesFrame:IsVisible() then
+		--	notesFrame.table:SortData()
+		--end
+	end
+end
+
+function CharacterNotes:GetInfoForNameOrMain(name)
+    local note = self:GetNote(name)
+    local rating = self:GetRating(name)
+    local main = nil
+    -- If there is no note then check if this character has a main 
+    -- and if so if there is a note for that character.
+    if not note then
+        if self.db.profile.useLibAlts == true and LibAlts and LibAlts.GetMain then
+            main = LibAlts:GetMain(name)
+            if main and #main > 0 then
+                main = formatCharName(main)
+                note = self:GetNote(main)
+                rating = self:GetRating(main)
+            end
+        end
+    end
+    
+    return note, rating, main
+end
+
 function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
     if self.db.profile.showNotesInTooltips == false then return end
 
     local main
     local name, unitid = tooltip:GetUnit()
+    local note, rating
 
 	-- If the unit exists and is a player then check if there is a note for it.
     if UnitExists(unitid) and UnitIsPlayer(unitid) then
 		-- Get the unit's name including the realm name
 		name = GetUnitName(unitid, true) or name
-        note = self:GetNote(name)
-        -- If there is no note then check if this character has a main 
-        -- and if so if there is a note for that character.
-        if not note then
-            if self.db.profile.useLibAlts == true and LibAlts and LibAlts.GetMain then
-                main = LibAlts:GetMain(name)
-                if main and #main > 0 then
-                    main = formatCharName(main)
-                    note = self:GetNote(main)
-                end
-            end
-        end
+        note, rating, main = self:GetInfoForNameOrMain(name)
 
         if note then
 			if self.db.profile.wrapTooltip == true then
@@ -1124,10 +1319,12 @@ function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
 			end
 
             if main and #main > 0 then
-        	    tooltip:AddLine(tooltipNoteWithMainFormat:format(main, note))
+        	    tooltip:AddLine(tooltipNoteWithMainFormat:format(
+        	        GetRatingColor(rating), main, note))
         	else
-        	    tooltip:AddLine(tooltipNoteFormat:format(note), 
-        	        1, 1, 1, not self.db.profile.wrapTooltip)
+        	    tooltip:AddLine(
+        	        tooltipNoteFormat:format(GetRatingColor(rating), note), 
+        	            1, 1, 1, not self.db.profile.wrapTooltip)
     	    end
         end
     end
@@ -1150,21 +1347,15 @@ end
 function CharacterNotes:DisplayNote(name, type)
     local main
     name = formatCharName(name)
-	local note = self:GetNote(name)
-	if not note then
-	    if self.db.profile.useLibAlts == true and LibAlts and LibAlts.GetMain then
-            main = formatCharName(LibAlts:GetMain(name))
-            if main and #main > 0 then
-                note = self:GetNote(main)
-            end
-        end
-    end
-
+    
+    local note, rating, main = self:GetInfoForNameOrMain(name)
 	if note then
 	    if main and #main > 0 then
-		    self:Print(chatNoteWithMainFormat:format(name, main, note))	        
+		    self:Print(chatNoteWithMainFormat:format(
+		        GetRatingColor(rating), name, main, note))	        
         else
-		    self:Print(chatNoteFormat:format(name, note))
+		    self:Print(chatNoteFormat:format(
+		        GetRatingColor(rating), name, note))
 		end
 	end
 end
@@ -1189,9 +1380,10 @@ function CharacterNotes:UnhookChatFrames()
     end
 end
 
-local noteLinkFmt = YELLOW.."|Hcharnote:%s|h[%s]|h|r"
+local noteLinkFmt = "%s|Hcharnote:%s|h[%s]|h|r"
 function CharacterNotes:CreateNoteLink(name, text)
-    return noteLinkFmt:format(name, text)
+    local rating = self.db.realm.ratings[name]
+    return noteLinkFmt:format(GetRatingColor(rating), name, text)
 end
 
 local function AddNoteForChat(message, name)
@@ -1207,7 +1399,7 @@ local function AddNoteForChat(message, name)
 end
 
 function CharacterNotes:AddMessage(frame, text, r, g, b, id, ...)
-    if text and type(text) == "string" then
+    if text and type(text) == "string" and self.db.profile.noteLinksInChat == true then
         -- If no charnotes are present then insert one.
         if text:find("|Hcharnote:") == nil then
             text = text:gsub("(|Hplayer:([^:]+).-|h.-|h)", AddNoteForChat)
