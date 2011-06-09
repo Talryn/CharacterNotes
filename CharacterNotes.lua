@@ -76,14 +76,18 @@ local notesData = {}
 local previousRaid = {}
 local previousParty = {}
 
+local RATING_COL = 1
+local NAME_COL = 2
+local NOTE_COL = 3
+
 local RED_COLOR    = {["r"] = 1, ["g"] = 0, ["b"] = 0, ["a"] = 1}
 local YELLOW_COLOR = {["r"] = 1, ["g"] = 1, ["b"] = 0, ["a"] = 1}
 local GREEN_COLOR  = {["r"] = 0, ["g"] = 1, ["b"] = 0, ["a"] = 1}
 
 local RATING_OPTIONS = {
-    [-1] = {"Negative", RED, RED_COLOR},
-    [0] = {"Neutral", YELLOW, YELLOW_COLOR},
-    [1] = {"Positive", GREEN, GREEN_COLOR},
+    [-1] = {"Negative", RED, RED_COLOR, "Interface\\RAIDFRAME\\ReadyCheck-NotReady.blp"},
+    [0] = {"Neutral", YELLOW, YELLOW_COLOR, ""},
+    [1] = {"Positive", GREEN, GREEN_COLOR, "Interface\\RAIDFRAME\\ReadyCheck-Ready.blp"},
 }
 
 local function GetRatingColor(rating)
@@ -106,6 +110,17 @@ local function GetRatingColorObj(rating)
         end
     end
     return color
+end
+
+local function GetRatingImage(rating)
+    local image = ""
+    if rating ~= nil and rating >= -1 and rating <= 1 then
+        local ratingInfo = RATING_OPTIONS[rating]
+        if ratingInfo and ratingInfo[4] then
+            image = ratingInfo[4]
+        end
+    end
+    return image
 end
 
 function CharacterNotes:GetOptions()
@@ -561,22 +576,40 @@ function CharacterNotes:CreateNotesFrame()
 
 	local ScrollingTable = LibStub("ScrollingTable");
 
+    local RATING_COL = 1
+    local NAME_COL = 2
+    local NOTE_COL = 3
+
 	local cols = {}
-	cols[1] = {
+    cols[RATING_COL] = {
+		["name"] = L["RATING_COLUMN_NAME"],
+		["width"] = 15,
+		["colorargs"] = nil,
+		["bgcolor"] = {
+			["r"] = 0.0,
+			["g"] = 0.0,
+			["b"] = 0.0,
+			["a"] = 1.0
+		},
+		["sortnext"] = NAME_COL,
+	  	["DoCellUpdate"] = function(rowFrame, cellFrame, data, cols, row, realrow, column, fShow, self, ...)
+	  	    if fShow then 
+		        local image = GetRatingImage(data[realrow][RATING_COL])
+		        if image and #image > 0 then
+		            cellFrame:SetBackdrop( { bgFile = image } )
+		        else
+		            cellFrame:SetBackdrop(nil)
+	            end
+		    end
+	  	end,
+    }
+	cols[NAME_COL] = {
 		["name"] = L["Character Name"],
 		["width"] = 150,
 		["align"] = "LEFT",
 		["color"] = function(data, cols, realrow, column, table)
-		    return GetRatingColorObj(data[realrow][3])
+		    return GetRatingColorObj(data[realrow][RATING_COL])
 	    end,
---[[
-		["color"] = {
-			["r"] = 1.0,
-			["g"] = 1.0,
-			["b"] = 1.0,
-			["a"] = 1.0
-		},
-]]--
 		["colorargs"] = nil,
 		["bgcolor"] = {
 			["r"] = 0.0,
@@ -588,7 +621,7 @@ function CharacterNotes:CreateNotesFrame()
 		["sort"] = "dsc",
 		["DoCellUpdate"] = nil,
 	}
-	cols[2] = {
+	cols[NOTE_COL] = {
 		["name"] = L["Note"],
 		["width"] = 400,
 		["align"] = "LEFT",
@@ -605,6 +638,7 @@ function CharacterNotes:CreateNotesFrame()
 			["b"] = 0.0,
 			["a"] = 1.0
 		},
+		["sortnext"] = NAME_COL,
 		["DoCellUpdate"] = nil,
 	}
 
@@ -665,8 +699,8 @@ function CharacterNotes:CreateNotesFrame()
 		    local frame = this:GetParent()
 			if frame.table:GetSelection() then
 				local row = frame.table:GetRow(frame.table:GetSelection())
-				if row[1] and #row[1] > 0 then
-					confirmDeleteFrame.charname:SetText(row[1])
+				if row[NAME_COL] and #row[NAME_COL] > 0 then
+					confirmDeleteFrame.charname:SetText(row[NAME_COL])
 					confirmDeleteFrame:Show()
 					confirmDeleteFrame:Raise()
 				end
@@ -683,8 +717,8 @@ function CharacterNotes:CreateNotesFrame()
 		    local frame = this:GetParent()
 			if frame.table:GetSelection() then
 				local row = frame.table:GetRow(frame.table:GetSelection())
-				if row[1] and #row[1] > 0 then
-					self:EditNoteHandler(row[1])
+				if row[NAME_COL] and #row[NAME_COL] > 0 then
+					self:EditNoteHandler(row[NAME_COL])
 				end
 			end
 		end)
@@ -712,7 +746,7 @@ function CharacterNotes:CreateNotesFrame()
 			local searchterm = searchterm:GetText():lower()
 			if searchterm and #searchterm > 0 then
 				local term = searchterm:lower()
-				if row[1]:lower():find(term) or row[2]:lower():find(term) then
+				if row[NAME_COL]:lower():find(term) or row[NOTE_COL]:lower():find(term) then
 					return true
 				end
 
@@ -1217,7 +1251,10 @@ end
 function CharacterNotes:BuildTableData()
 	local key, value = nil, nil
 	for key, value in pairs(self.db.realm.notes) do
-		tinsert(notesData, {key, value, self:GetRating(key)})
+		tinsert(notesData, {
+		    [RATING_COL] = (self:GetRating(key) or 0), 
+		    [NAME_COL] = key, 
+		    [NOTE_COL] = value})
 	end
 end
 
@@ -1228,14 +1265,17 @@ function CharacterNotes:SetNote(name, note)
 
 		local found = false
 		for i, v in ipairs(notesData) do
-			if v[1] == name then
-				notesData[i][2] = note
+			if v[NAME_COL] == name then
+				notesData[i][NOTE_COL] = note
 				found = true
 			end
 		end
 		
 		if found == false then
-			tinsert(notesData, {name, note, self:GetRating(name)})
+			tinsert(notesData, {
+			    [RATING_COL] = (self:GetRating(name) or 0),
+			    [NAME_COL] = name, 
+			    [NOTE_COL] = note})
 		end
 
 		-- If the Notes window is shown then we need to update it
@@ -1252,14 +1292,17 @@ function CharacterNotes:SetRating(name, rating)
 
 		local found = false
 		for i, v in ipairs(notesData) do
-			if v[1] == name then
-				notesData[i][3] = rating
+			if v[NAME_COL] == name then
+				notesData[i][RATING_COL] = rating
 				found = true
 			end
 		end
 		
 		if found == false then
-			tinsert(notesData, {name, self:GetNote(name), rating})
+			tinsert(notesData, {
+			    [RATING_COL] = rating, 
+			    [NAME_COL] = name, 
+			    [NOTE_COL] = self:GetNote(name)})
 		end
 
 		-- If the Notes window is shown then we need to update it
@@ -1285,15 +1328,13 @@ end
 
 function CharacterNotes:DeleteNote(name)
 	if self.db.realm.notes and name then
+        -- Delete both the note and the rating.
 		self.db.realm.notes[name] = nil;
+		self.db.realm.ratings[name] = nil;
 		
 		for i, v in ipairs(notesData) do
-			if v[1] == name then
-			    if v[3] == nil or v[3] == 0 then
-				    tremove(notesData, i)
-                else
-                    v[2] = nil
-                end
+			if v[NAME_COL] == name then
+			    tremove(notesData, i)
 			end
 		end
 		
@@ -1309,11 +1350,11 @@ function CharacterNotes:DeleteRating(name)
 		self.db.realm.ratings[name] = nil;
 		
 		for i, v in ipairs(notesData) do
-			if v[1] == name then
-			    if v[2] == nil then
+			if v[NAME_COL] == name then
+			    if v[NOTE_COL] == nil then
 				    tremove(notesData, i)
                 else
-                    v[3] = nil
+                    v[RATING_COL] = 0
                 end
 			end
 		end
