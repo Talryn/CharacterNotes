@@ -4,7 +4,7 @@ local ADDON_NAME = ...
 local ADDON_VERSION = "@project-version@"
 
 -- Local versions for performance
-local tinsert, tremove = table.insert, table.remove
+local tinsert, tremove, tconcat = table.insert, table.remove, table.concat
 local pairs, ipairs = pairs, ipairs
 local sub = string.sub
 
@@ -59,7 +59,11 @@ local defaults = {
 		remember_tooltip_pos = true,
 		lock_tooltip = false,
 		note_tooltip_x = nil,
-		note_tooltip_y = nil
+		note_tooltip_y = nil,
+		exportUseName = true,
+		exportUseNote = true,
+		exportUseRating = true,
+		exportEscape = true,
 	},
 	realm = {
 	    notes = {},
@@ -129,205 +133,240 @@ function CharacterNotes:GetOptions()
             name = ADDON_NAME,
             type = 'group',
             args = {
-        		headerGeneralOptions = {
-        			order = 0,
-        			type = "header",
-        			name = "General Options",
-        		},
-        	    minimap = {
-                    name = L["Minimap Button"],
-                    desc = L["Toggle the minimap button"],
-                    type = "toggle",
-                    set = function(info,val)
-                        	-- Reverse the value since the stored value is to hide it
-                            self.db.profile.minimap.hide = not val
-                        	if self.db.profile.minimap.hide then
-                        		icon:Hide("CharacterNotesLDB")
-                        	else
-                        		icon:Show("CharacterNotesLDB")
-                        	end
-                          end,
-                    get = function(info)
-                	        -- Reverse the value since the stored value is to hide it
-                            return not self.db.profile.minimap.hide
-                          end,
-        			order = 10
+                core = {
+                    order = 1,
+                    name = "General Options",
+                    type = "group",
+                    args = {
+                		headerGeneralOptions = {
+                			order = 0,
+                			type = "header",
+                			name = "General Options",
+                		},
+                	    minimap = {
+                            name = L["Minimap Button"],
+                            desc = L["Toggle the minimap button"],
+                            type = "toggle",
+                            set = function(info,val)
+                                	-- Reverse the value since the stored value is to hide it
+                                    self.db.profile.minimap.hide = not val
+                                	if self.db.profile.minimap.hide then
+                                		icon:Hide("CharacterNotesLDB")
+                                	else
+                                		icon:Show("CharacterNotesLDB")
+                                	end
+                                  end,
+                            get = function(info)
+                        	        -- Reverse the value since the stored value is to hide it
+                                    return not self.db.profile.minimap.hide
+                                  end,
+                			order = 10
+                        },
+                	    useLibAlts = {
+                            name = L["Use LibAlts Data"],
+                            desc = L["Toggles the use of LibAlts data if present.  If present and no note is found for a character, the note for the main will be shown if found."],
+                            type = "toggle",
+                            set = function(info, val) self.db.profile.useLibAlts = val end,
+                            get = function(info) return self.db.profile.useLibAlts end,
+                			order = 20
+                        },
+                	    mouseoverHighlighting = {
+                            name = L["Mouseover Highlighting"],
+                            desc = L["Toggles mouseover highlighting for tables."],
+                            type = "toggle",
+                            set = function(info, val)
+                                    self.db.profile.mouseoverHighlighting = val
+                                    self:UpdateMouseoverHighlighting(val)
+                                end,
+                            get = function(info)
+                                    return self.db.profile.mouseoverHighlighting
+                                end,
+                			order = 30
+                        },
+                	    verbose = {
+                            name = L["Verbose"],
+                            desc = L["Toggles the display of informational messages"],
+                            type = "toggle",
+                            set = function(info, val) self.db.profile.verbose = val end,
+                            get = function(info) return self.db.profile.verbose end,
+                			order = 40
+                        },
+                        headerNoteDisplay = {
+                			order = 100,
+                			type = "header",
+                			name = L["Note Display"],
+                        },
+                	    noteLinksInChat = {
+                            name = L["Note Links"],
+                            desc = L["NoteLinks_OptionDesc"],
+                            type = "toggle",
+                            set = function(info, val)
+                                    self.db.profile.noteLinksInChat = val
+                                    if val then
+                                        self:EnableNoteLinks()
+                                    else
+                                        self:DisableNoteLinks()
+                                    end
+                                end,
+                            get = function(info) return self.db.profile.noteLinksInChat end,
+                			order = 110
+                        },
+                	    showNotesOnWho = {
+                            name = L["Show notes with who results"],
+                            desc = L["Toggles showing notes for /who results in the chat window."],
+                            type = "toggle",
+                            set = function(info, val) self.db.profile.showNotesOnWho = val end,
+                            get = function(info) return self.db.profile.showNotesOnWho end,
+                			order = 120
+                        },
+                	    showNotesOnLogon = {
+                            name = L["Show notes at logon"],
+                            desc = L["Toggles showing notes when a friend or guild memeber logs on."],
+                            type = "toggle",
+                            set = function(info, val) self.db.profile.showNotesOnLogon = val end,
+                            get = function(info) return self.db.profile.showNotesOnLogon end,
+                			order = 130
+                        },
+                        headerNoteLinks = {
+                			order = 150,
+                			type = "header",
+                			name = L["Note Links"],
+                        },
+                        lock_note_tooltip = {
+                            name = L["Lock"],
+                            desc = L["LockNoteTooltip_OptionDesc"],
+                            type = "toggle",
+                            set = function(info,val)
+                                self.db.profile.lock_tooltip = val
+                            end,
+                            get = function(info) return self.db.profile.lock_tooltip end,
+                			order = 160
+                        },
+                        remember_tooltip_pos = {
+                            name = L["Remember Position"],
+                            desc = L["RememberPositionNoteTooltip_OptionDesc"],
+                            type = "toggle",
+                            set = function(info,val) self.db.profile.remember_tooltip_pos = val end,
+                            get = function(info) return self.db.profile.remember_tooltip_pos end,
+                			order = 170
+                        },
+                		headerTooltipOptions = {
+                			order = 200,
+                			type = "header",
+                			name = L["Tooltip Options"],
+                		},
+                	    showNotesInTooltips = {
+                            name = L["Show notes in tooltips"],
+                            desc = L["Toggles showing notes in unit tooltips."],
+                            type = "toggle",
+                            set = function(info, val) self.db.profile.showNotesInTooltips = val end,
+                            get = function(info) return self.db.profile.showNotesInTooltips end,
+                			order = 210
+                        },
+                        wrapTooltip = {
+                            name = L["Wrap Tooltips"],
+                            desc = L["Wrap notes in tooltips at the specified line length.  Subsequent lines are indented."],
+                            type = "toggle",
+                            set = function(info,val) self.db.profile.wrapTooltip = val end,
+                            get = function(info) return self.db.profile.wrapTooltip end,
+                			order = 220
+                        },
+                        wrapTooltipLength = {
+                            name = L["Tooltip Wrap Length"],
+                            desc = L["Maximum line length for a tooltip"],
+                            type = "range",
+                			min = 20,
+                			max = 80,
+                			step = 1,
+                            set = function(info,val) self.db.profile.wrapTooltipLength = val end,
+                            get = function(info) return self.db.profile.wrapTooltipLength end,
+                			order = 230
+                        },
+                		headerMainWindow = {
+                			order = 300,
+                			type = "header",
+                			name = L["Notes Window"],
+                		},
+                        lock_main_window = {
+                            name = L["Lock"],
+                            desc = L["Lock_OptionDesc"],
+                            type = "toggle",
+                            set = function(info,val)
+                                self.db.profile.lock_main_window = val
+                                notesFrame.lock = val
+                            end,
+                            get = function(info) return self.db.profile.lock_main_window end,
+                			order = 310
+                        },
+                        remember_main_pos = {
+                            name = L["Remember Position"],
+                            desc = L["RememberPosition_OptionDesc"],
+                            type = "toggle",
+                            set = function(info,val) self.db.profile.remember_main_pos = val end,
+                            get = function(info) return self.db.profile.remember_main_pos end,
+                			order = 320
+                        },
+                		headerPartyRaid = {
+                			order = 400,
+                			type = "header",
+                			name = L["Notes for Party and Raid Members"],
+                		},
+                        descNotesGroup = {
+                            order = 410,
+                            type = "description",
+                            name = L["These options control if notes are displayed in the chat window for any members who have a note.  Notes are shown when joining a raid or a new member joins."]
+                        },
+                        notesForPartyMembers = {
+                            name = L["Party Members"],
+                            desc = L["Toggles displaying notes for party members."],
+                            type = "toggle",
+                            set = function(info,val) self.db.profile.notesForPartyMembers = val end,
+                            get = function(info) return self.db.profile.notesForPartyMembers end,
+                			order = 420
+                        },
+                        notesForRaidMembers = {
+                            name = L["Raid Members"],
+                            desc = L["Toggles displaying notes for raid members."],
+                            type = "toggle",
+                            set = function(info,val) self.db.profile.notesForRaidMembers = val end,
+                            get = function(info) return self.db.profile.notesForRaidMembers end,
+                			order = 430
+                        }
+                    }
                 },
-        	    useLibAlts = {
-                    name = L["Use LibAlts Data"],
-                    desc = L["Toggles the use of LibAlts data if present.  If present and no note is found for a character, the note for the main will be shown if found."],
-                    type = "toggle",
-                    set = function(info, val) self.db.profile.useLibAlts = val end,
-                    get = function(info) return self.db.profile.useLibAlts end,
-        			order = 20
-                },
-        	    mouseoverHighlighting = {
-                    name = L["Mouseover Highlighting"],
-                    desc = L["Toggles mouseover highlighting for tables."],
-                    type = "toggle",
-                    set = function(info, val)
-                            self.db.profile.mouseoverHighlighting = val
-                            self:UpdateMouseoverHighlighting(val)
-                        end,
-                    get = function(info)
-                            return self.db.profile.mouseoverHighlighting
-                        end,
-        			order = 30
-                },
-        	    verbose = {
-                    name = L["Verbose"],
-                    desc = L["Toggles the display of informational messages"],
-                    type = "toggle",
-                    set = function(info, val) self.db.profile.verbose = val end,
-                    get = function(info) return self.db.profile.verbose end,
-        			order = 40
-                },
-                headerNoteDisplay = {
-        			order = 100,
-        			type = "header",
-        			name = L["Note Display"],
-                },
-        	    noteLinksInChat = {
-                    name = L["Note Links"],
-                    desc = L["NoteLinks_OptionDesc"],
-                    type = "toggle",
-                    set = function(info, val)
-                            self.db.profile.noteLinksInChat = val
-                            if val then
-                                self:EnableNoteLinks()
-                            else
-                                self:DisableNoteLinks()
-                            end
-                        end,
-                    get = function(info) return self.db.profile.noteLinksInChat end,
-        			order = 110
-                },
-        	    showNotesOnWho = {
-                    name = L["Show notes with who results"],
-                    desc = L["Toggles showing notes for /who results in the chat window."],
-                    type = "toggle",
-                    set = function(info, val) self.db.profile.showNotesOnWho = val end,
-                    get = function(info) return self.db.profile.showNotesOnWho end,
-        			order = 120
-                },
-        	    showNotesOnLogon = {
-                    name = L["Show notes at logon"],
-                    desc = L["Toggles showing notes when a friend or guild memeber logs on."],
-                    type = "toggle",
-                    set = function(info, val) self.db.profile.showNotesOnLogon = val end,
-                    get = function(info) return self.db.profile.showNotesOnLogon end,
-        			order = 130
-                },
-                headerNoteLinks = {
-        			order = 150,
-        			type = "header",
-        			name = L["Note Links"],
-                },
-                lock_note_tooltip = {
-                    name = L["Lock"],
-                    desc = L["LockNoteTooltip_OptionDesc"],
-                    type = "toggle",
-                    set = function(info,val)
-                        self.db.profile.lock_tooltip = val
-                    end,
-                    get = function(info) return self.db.profile.lock_tooltip end,
-        			order = 160
-                },
-                remember_tooltip_pos = {
-                    name = L["Remember Position"],
-                    desc = L["RememberPositionNoteTooltip_OptionDesc"],
-                    type = "toggle",
-                    set = function(info,val) self.db.profile.remember_tooltip_pos = val end,
-                    get = function(info) return self.db.profile.remember_tooltip_pos end,
-        			order = 170
-                },
-        		headerTooltipOptions = {
-        			order = 200,
-        			type = "header",
-        			name = L["Tooltip Options"],
-        		},
-        	    showNotesInTooltips = {
-                    name = L["Show notes in tooltips"],
-                    desc = L["Toggles showing notes in unit tooltips."],
-                    type = "toggle",
-                    set = function(info, val) self.db.profile.showNotesInTooltips = val end,
-                    get = function(info) return self.db.profile.showNotesInTooltips end,
-        			order = 210
-                },
-                wrapTooltip = {
-                    name = L["Wrap Tooltips"],
-                    desc = L["Wrap notes in tooltips at the specified line length.  Subsequent lines are indented."],
-                    type = "toggle",
-                    set = function(info,val) self.db.profile.wrapTooltip = val end,
-                    get = function(info) return self.db.profile.wrapTooltip end,
-        			order = 220
-                },
-                wrapTooltipLength = {
-                    name = L["Tooltip Wrap Length"],
-                    desc = L["Maximum line length for a tooltip"],
-                    type = "range",
-        			min = 20,
-        			max = 80,
-        			step = 1,
-                    set = function(info,val) self.db.profile.wrapTooltipLength = val end,
-                    get = function(info) return self.db.profile.wrapTooltipLength end,
-        			order = 230
-                },
-        		headerMainWindow = {
-        			order = 300,
-        			type = "header",
-        			name = L["Notes Window"],
-        		},
-                lock_main_window = {
-                    name = L["Lock"],
-                    desc = L["Lock_OptionDesc"],
-                    type = "toggle",
-                    set = function(info,val)
-                        self.db.profile.lock_main_window = val
-                        notesFrame.lock = val
-                    end,
-                    get = function(info) return self.db.profile.lock_main_window end,
-        			order = 310
-                },
-                remember_main_pos = {
-                    name = L["Remember Position"],
-                    desc = L["RememberPosition_OptionDesc"],
-                    type = "toggle",
-                    set = function(info,val) self.db.profile.remember_main_pos = val end,
-                    get = function(info) return self.db.profile.remember_main_pos end,
-        			order = 320
-                },
-        		headerPartyRaid = {
-        			order = 400,
-        			type = "header",
-        			name = L["Notes for Party and Raid Members"],
-        		},
-                descNotesGroup = {
-                    order = 410,
-                    type = "description",
-                    name = L["These options control if notes are displayed in the chat window for any members who have a note.  Notes are shown when joining a raid or a new member joins."]
-                },
-                notesForPartyMembers = {
-                    name = L["Party Members"],
-                    desc = L["Toggles displaying notes for party members."],
-                    type = "toggle",
-                    set = function(info,val) self.db.profile.notesForPartyMembers = val end,
-                    get = function(info) return self.db.profile.notesForPartyMembers end,
-        			order = 420
-                },
-                notesForRaidMembers = {
-                    name = L["Raid Members"],
-                    desc = L["Toggles displaying notes for raid members."],
-                    type = "toggle",
-                    set = function(info,val) self.db.profile.notesForRaidMembers = val end,
-                    get = function(info) return self.db.profile.notesForRaidMembers end,
-        			order = 430
+                export = {
+                    order = 2,
+                    name = L["Import/Export"],
+                    type = "group",
+                    args = {
+                		headerExport = {
+                			order = 100,
+                			type = "header",
+                			name = L["Export"],
+                		},
+                        guildExportButton = {
+                            name = L["Notes Export"],
+                            desc = L["NotesExport_OptionDesc"],
+                            type = "execute",
+                            width = "normal",
+                            func = function()
+                            	local optionsFrame = InterfaceOptionsFrame
+                                optionsFrame:Hide()
+                                self:NotesExportHandler("")
+                            end,
+                			order = 110
+                        },
+                    }
                 }
             }
         }
     end
 
     return options
+end
+
+function CharacterNotes:ShowOptions()
+	InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Main)
 end
 
 function CharacterNotes:OnInitialize()
@@ -338,9 +377,20 @@ function CharacterNotes:OnInitialize()
 	self:BuildTableData()
 
     -- Register the options table
-    LibStub("AceConfig-3.0"):RegisterOptionsTable("CharacterNotes", self:GetOptions())
-	self.optionsFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(
-	    "CharacterNotes", ADDON_NAME)
+    --LibStub("AceConfig-3.0"):RegisterOptionsTable("CharacterNotes", self:GetOptions())
+	--self.optionsFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(
+	--    "CharacterNotes", ADDON_NAME)
+
+    -- Register the options table
+    local displayName = GetAddOnMetadata(ADDON_NAME, "Title")
+	local options = self:GetOptions()
+    LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable(displayName, options)
+    self.optionsFrame = {}
+    local ACD = LibStub("AceConfigDialog-3.0")
+	self.optionsFrame.Main = ACD:AddToBlizOptions(
+	    displayName, displayName, nil, "core")
+	self.optionsFrame.Notes = ACD:AddToBlizOptions(
+	    displayName, L["Import/Export"], displayName, "export")
 
 	self:RegisterChatCommand("setnote", "SetNoteHandler")
 	self:RegisterChatCommand("delnote", "DelNoteHandler")
@@ -349,6 +399,7 @@ function CharacterNotes:OnInitialize()
 	self:RegisterChatCommand("editnote", "EditNoteHandler")
 	self:RegisterChatCommand("notes", "NotesHandler")
 	self:RegisterChatCommand("searchnote", "NotesHandler")
+	self:RegisterChatCommand("notesexport", "NotesExportHandler")
 	self:RegisterChatCommand("notesdbcheck", "NotesDBCheckHandler")
 
 	-- Create the LDB launcher
@@ -363,7 +414,7 @@ function CharacterNotes:OnInitialize()
     				optionsFrame:Hide()
     			else
     			    self:HideNotesWindow()
-    				InterfaceOptionsFrame_OpenToCategory(self.optionsFrame)
+    				self:ShowOptions()
     			end
     		elseif button == "LeftButton" then
     			if self:IsNotesVisible() then
@@ -540,6 +591,10 @@ function CharacterNotes:GetNoteHandler(input)
 	end	
 end
 
+function CharacterNotes:NotesExportHandler(input)
+    self:ShowNotesExportFrame()
+end
+
 function CharacterNotes:UpdateMouseoverHighlighting(enabled)
     if notesFrame and notesFrame.table then
         local table = notesFrame.table
@@ -556,6 +611,149 @@ function CharacterNotes:UpdateMouseoverHighlighting(enabled)
         	})
         end
     end
+end
+
+local function escapeField(value, escapeChar)
+    local strFmt = "%s%s%s"
+    local doubleEscape = escapeChar..escapeChar
+    if escapeChar and escapeChar ~= "" then
+        local escapedStr = value:gsub(escapeChar, doubleEscape)
+        return strFmt:format(escapeChar, escapedStr, escapeChar)
+    else
+        return value
+    end
+end
+
+local notesExportBuffer = {}
+function CharacterNotes:GenerateNotesExport()
+    local notesExportText = ""
+
+    local delimiter = ","
+    local fields = {}
+    local quote = ""
+    local rating
+    if self.db.profile.exportEscape == true then
+        quote = "\""
+    end
+
+    for name, note in pairs(self.db.realm.notes) do
+        wipe(fields)
+        if self.db.profile.exportUseName == true then
+            tinsert(fields, escapeField(name, quote))
+        end
+        if self.db.profile.exportUseNote == true then
+            tinsert(fields, escapeField(note, quote))
+        end
+        if self.db.profile.exportUseRating == true then
+            rating = (self:GetRating(name) or 0)
+            tinsert(fields, rating)
+        end
+
+        local line = tconcat(fields, delimiter)
+        tinsert(notesExportBuffer, line)
+    end
+
+    -- Add a blank line so a final new line is added
+    tinsert(notesExportBuffer, "")
+    notesExportText = tconcat(notesExportBuffer, "\n")
+    wipe(notesExportBuffer)
+    return notesExportText
+end
+
+local NotesExportFrame = nil
+function CharacterNotes:ShowNotesExportFrame()
+    if NotesExportFrame then return end
+
+	local frame = AGU:Create("Frame")
+	frame:SetTitle(L["Notes Export"])
+	frame:SetWidth(650)
+	frame:SetHeight(400)
+    frame:SetLayout("Flow")
+	frame:SetCallback("OnClose", function(widget)
+		widget:ReleaseChildren()
+		widget:Release()
+		NotesExportFrame = nil
+	end)
+
+    NotesExportFrame = frame
+
+    local multiline = AGU:Create("MultiLineEditBox")
+    multiline:SetLabel(L["NotesExport_ExportLabel"])
+    multiline:SetNumLines(10)
+    multiline:SetMaxLetters(0)
+    multiline:SetFullWidth(true)
+    multiline:DisableButton(true)
+    frame:AddChild(multiline)
+    frame.multiline = multiline
+
+    local fieldsHeading =  AGU:Create("Heading")
+    fieldsHeading:SetText("Fields to Export")
+    fieldsHeading:SetFullWidth(true)
+    frame:AddChild(fieldsHeading)
+
+    local nameOption = AGU:Create("CheckBox")
+    nameOption:SetLabel(L["Character Name"])
+    nameOption:SetCallback("OnValueChanged", 
+        function(widget, event, value)
+            self.db.profile.exportUseName = value
+        end
+    )
+    nameOption:SetValue(self.db.profile.exportUseName)
+    frame:AddChild(nameOption)
+
+    local noteOption = AGU:Create("CheckBox")
+    noteOption:SetLabel(L["Note"])
+    noteOption:SetCallback("OnValueChanged", 
+        function(widget, event, value)
+            self.db.profile.exportUseNote = value
+        end
+    )
+    noteOption:SetValue(self.db.profile.exportUseNote)
+    frame:AddChild(noteOption)
+
+    local ratingOption = AGU:Create("CheckBox")
+    ratingOption:SetLabel(L["Rating"])
+    ratingOption:SetCallback("OnValueChanged", 
+        function(widget, event, value)
+            self.db.profile.exportUseRating = value
+        end
+    )
+    ratingOption:SetValue(self.db.profile.exportUseRating)
+    frame:AddChild(ratingOption)
+
+    local optionsHeading = AGU:Create("Heading")
+    optionsHeading:SetText("Options")
+    optionsHeading:SetFullWidth(true)
+    frame:AddChild(optionsHeading)
+
+    local escapeOption = AGU:Create("CheckBox")
+    escapeOption:SetLabel(L["NotesExport_Escape"])
+    escapeOption:SetCallback("OnValueChanged", 
+        function(widget, event, value)
+            self.db.profile.exportEscape = value
+        end
+    )
+    escapeOption:SetValue(self.db.profile.exportEscape)
+    frame:AddChild(escapeOption)
+
+    local spacer = AGU:Create("Label")
+    spacer:SetText(" ")
+    spacer:SetFullWidth(true)
+    frame:AddChild(spacer)
+
+    local exportButton = AGU:Create("Button")
+    exportButton:SetText(L["Export"])
+    exportButton:SetCallback("OnClick",
+        function(widget)
+            local notesExportText = CharacterNotes:GenerateNotesExport(
+                self.db.profile.exportUseName,
+                self.db.profile.exportUseNotes,
+                self.db.profile.exportUseRating
+            )
+            frame.multiline:SetText(notesExportText)
+        end)
+    frame:AddChild(exportButton)
+
 end
 
 function CharacterNotes:CreateNotesFrame()
@@ -925,7 +1123,7 @@ function CharacterNotes:CreateEditNoteFrame()
 	ratingLabel:SetPoint("TOP", charname, "BOTTOM", 0, -30)
 	ratingLabel:SetPoint("LEFT", editwindow, "LEFT", 20, 0)
 	ratingLabel:SetTextColor(1.0,1.0,1.0,1)
-    ratingLabel:SetText("Rating:")
+    ratingLabel:SetText(L["Rating"]..":")
 
     local ratingDropdown = CreateFrame("Button", "CN_RatingDropDown", editwindow, "UIDropDownMenuTemplate")
     ratingDropdown:ClearAllPoints()
