@@ -356,6 +356,24 @@ function CharacterNotes:GetOptions()
                             end,
                 			order = 110
                         },
+                		headerImport = {
+                			order = 200,
+                			type = "header",
+                			name = L["Import"],
+                		},
+                        guildImportButton = {
+                            name = L["Notes Import"],
+                            desc = L["NotesImport_OptionDesc"],
+                            type = "execute",
+                            width = "normal",
+                            disabled = true,
+                            func = function()
+                            	local optionsFrame = InterfaceOptionsFrame
+                                optionsFrame:Hide()
+                                self:NotesImportHandler("")
+                            end,
+                			order = 210
+                        },
                     }
                 }
             }
@@ -400,6 +418,7 @@ function CharacterNotes:OnInitialize()
 	self:RegisterChatCommand("notes", "NotesHandler")
 	self:RegisterChatCommand("searchnote", "NotesHandler")
 	self:RegisterChatCommand("notesexport", "NotesExportHandler")
+	self:RegisterChatCommand("notesimport", "NotesImportHandler")
 	self:RegisterChatCommand("notesdbcheck", "NotesDBCheckHandler")
 
 	-- Create the LDB launcher
@@ -595,6 +614,10 @@ function CharacterNotes:NotesExportHandler(input)
     self:ShowNotesExportFrame()
 end
 
+function CharacterNotes:NotesImportHandler(input)
+    self:ShowNotesImportFrame()
+end
+
 function CharacterNotes:UpdateMouseoverHighlighting(enabled)
     if notesFrame and notesFrame.table then
         local table = notesFrame.table
@@ -658,6 +681,51 @@ function CharacterNotes:GenerateNotesExport()
     notesExportText = tconcat(notesExportBuffer, "\n")
     wipe(notesExportBuffer)
     return notesExportText
+end
+
+local NotesImportFrame = nil
+function CharacterNotes:ShowNotesImportFrame()
+    if NotesImportFrame then return end
+
+	local frame = AGU:Create("Frame")
+	frame:SetTitle(L["Notes Import"])
+	frame:SetWidth(650)
+	frame:SetHeight(400)
+    frame:SetLayout("Flow")
+	frame:SetCallback("OnClose", function(widget)
+		widget:ReleaseChildren()
+		widget:Release()
+		NotesImportFrame = nil
+	end)
+
+    NotesImportFrame = frame
+
+    local multiline = AGU:Create("MultiLineEditBox")
+    multiline:SetLabel(L["NotesImport_ImportLabel"])
+    multiline:SetNumLines(10)
+    multiline:SetMaxLetters(0)
+    multiline:SetFullWidth(true)
+    multiline:DisableButton(true)
+    frame:AddChild(multiline)
+    frame.multiline = multiline
+
+    local spacer = AGU:Create("Label")
+    spacer:SetText(" ")
+    spacer:SetFullWidth(true)
+    frame:AddChild(spacer)
+
+    local importButton = AGU:Create("Button")
+    importButton:SetText(L["Import"])
+    importButton:SetCallback("OnClick",
+        function(widget)
+            CharacterNotes:ImportNotesFromText(
+                NotesImportFrame.multiline:GetText())
+        end)
+    frame:AddChild(importButton)
+end
+
+function CharacterNotes:ImportNotesFromText(importData)
+
 end
 
 local NotesExportFrame = nil
