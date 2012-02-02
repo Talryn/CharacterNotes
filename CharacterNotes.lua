@@ -965,7 +965,7 @@ function CharacterNotes:CreateNotesFrame()
 		    local frame = this:GetParent()
 			if frame.table:GetSelection() then
 				local row = frame.table:GetRow(frame.table:GetSelection())
-				if row[NAME_COL] and #row[NAME_COL] > 0 then
+				if row and row[NAME_COL] and #row[NAME_COL] > 0 then
 					confirmDeleteFrame.charname:SetText(row[NAME_COL])
 					confirmDeleteFrame:Show()
 					confirmDeleteFrame:Raise()
@@ -983,7 +983,7 @@ function CharacterNotes:CreateNotesFrame()
 		    local frame = this:GetParent()
 			if frame.table:GetSelection() then
 				local row = frame.table:GetRow(frame.table:GetSelection())
-				if row[NAME_COL] and #row[NAME_COL] > 0 then
+				if row and row[NAME_COL] and #row[NAME_COL] > 0 then
 					self:EditNoteHandler(row[NAME_COL])
 				end
 			end
