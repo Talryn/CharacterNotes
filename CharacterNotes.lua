@@ -3,6 +3,9 @@ CharacterNotes = LibStub("AceAddon-3.0"):NewAddon("CharacterNotes", "AceConsole-
 local ADDON_NAME = ...
 local ADDON_VERSION = "@project-version@"
 
+local CURRENT_BUILD, CURRENT_INTERNAL, 
+    CURRENT_BUILD_DATE, CURRENT_UI_VERSION = GetBuildInfo()
+
 -- Local versions for performance
 local tinsert, tremove, tconcat = table.insert, table.remove, table.concat
 local pairs, ipairs = pairs, ipairs
@@ -77,8 +80,8 @@ local notesFrame = nil
 local editNoteFrame = nil
 local confirmDeleteFrame = nil
 local notesData = {}
-local previousRaid = {}
-local previousParty = {}
+local previousGroup = {}
+local playerName = GetUnitName("player", true)
 
 local RATING_COL = 1
 local NAME_COL = 2
@@ -1393,9 +1396,12 @@ function CharacterNotes:OnEnable()
 	self:RegisterEvent("CHAT_MSG_SYSTEM")
 
     -- Register for party and raid roster updates
-    self:RegisterEvent("RAID_ROSTER_UPDATE")
-    self:RegisterEvent("PARTY_MEMBERS_CHANGED")
-
+	if CURRENT_UI_VERSION >= 50000 then
+   		self:RegisterEvent("GROUP_ROSTER_UPDATE")
+	else
+		self:RegisterEvent("RAID_ROSTER_UPDATE")
+   		self:RegisterEvent("PARTY_MEMBERS_CHANGED")
+	end
 	-- Create the Notes frame for later use
 	notesFrame = self:CreateNotesFrame()
 	
@@ -1410,6 +1416,8 @@ function CharacterNotes:OnEnable()
 
     -- Enable note links
     self:EnableNoteLinks()
+	
+	playerName = GetUnitName("player", true)
 end
 
 function CharacterNotes:EnableNoteLinks()
@@ -1436,6 +1444,12 @@ end
 function CharacterNotes:OnDisable()
     -- Called when the addon is disabled
 	self:UnregisterEvent("CHAT_MSG_SYSTEM")
+	if CURRENT_UI_VERSION >= 50000 then
+   		self:UnregisterEvent("GROUP_ROSTER_UPDATE")
+	else
+		self:UnregisterEvent("RAID_ROSTER_UPDATE")
+   		self:UnregisterEvent("PARTY_MEMBERS_CHANGED")
+	end
 	
 	-- Remove the menu items
 	self:RemoveEditNoteMenuItem()
@@ -1783,71 +1797,73 @@ function CharacterNotes:CHAT_MSG_SYSTEM(event, message)
 	end
 end
 
-function CharacterNotes:RAID_ROSTER_UPDATE(event, message)
-    if GetNumRaidMembers() == 0 then
-        -- Left a raid
-        wipe(previousRaid)
+local function GetGroupTypeAndNumber()
+	local numRaid = GetNumRaidMembers()
+	if numRaid > 0 then
+		return "raid", numRaid
+	else
+		return "party", GetNumPartyMembers()
+	end
+end
+
+function CharacterNotes:ProcessGroupRosterUpdate()
+	local groupType = "party"
+	local numMembers = 0
+
+	if CURRENT_UI_VERSION >= 50000 then
+		numMembers = GetNumGroupMembers()
+		if IsInRaid() then
+			groupType = "raid"
+		end
+	else
+		groupType, numMembers = GetGroupTypeAndNumber()
+	end
+
+	if groupType == "raid" then
+		if self.db.profile.notesForRaidMembers ~= true then return end
+	else
+		if self.db.profile.notesForPartyMembers ~= true then return end
+	end
+
+    if numMembers == 0 then
+        -- Left a group
+        wipe(previousGroup)
     else
-        if self.db.profile.notesForRaidMembers == true then
-            local currentRaid = {}
-            local name
+        local currentGroup = {}
+        local name
 
-            for i = 1, GetNumRaidMembers() do
-                name = GetUnitName("raid"..i, true)
-                if name then
-                    currentRaid[name] = true
+        for i = 1, numMembers do
+            name = GetUnitName(groupType..i, true)
+            if name then
+                currentGroup[name] = true
 
-                    if not previousRaid[name] == true then
-                        if DEBUG == true then
-                            self:Print(name.." joined the raid.")
-                        end
-                        self:DisplayNote(name)
+                if name ~= playerName and not previousGroup[name] == true then
+                    if DEBUG == true then
+                        self:Print(name.." joined the group.")
                     end
+                    self:DisplayNote(name)
                 end
             end
-
-            -- Set previous raid to the current raid
-            wipe(previousRaid)
-            for name in pairs(currentRaid) do
-                previousRaid[name] = true
-            end
         end
-    end
+
+        -- Set previous group to the current group
+        wipe(previousGroup)
+        for name in pairs(currentGroup) do
+            previousGroup[name] = true
+        end
+	end
+end
+
+function CharacterNotes:RAID_ROSTER_UPDATE(event, message)
+	self:ProcessGroupRosterUpdate()
 end
 
 function CharacterNotes:PARTY_MEMBERS_CHANGED(event, message)
-    -- If in a raid then don't worry about this event.
-    if GetNumRaidMembers() > 0 then return end
-        
-    if GetNumPartyMembers() == 0 then
-        -- Left a party
-        wipe(previousParty)
-    else
-        if self.db.profile.notesForPartyMembers == true then
-            local currentParty = {}
-            local name
+	self:ProcessGroupRosterUpdate()
+end
 
-            for i = 1, GetNumPartyMembers() do
-                name = GetUnitName("party"..i, true)
-                if name then
-                    currentParty[name] = true
-
-                    if not previousParty[name] == true then
-                        if DEBUG == true then
-                            self:Print(name.." joined the party.")
-                        end
-                        self:DisplayNote(name)
-                    end
-                end
-            end
-
-            -- Set previous party to the current party
-            wipe(previousParty)
-            for name in pairs(currentParty) do
-                previousParty[name] = true
-            end
-        end
-    end
+function CharacterNotes:GROUP_ROSTER_UPDATE(event, message)
+	self:ProcessGroupRosterUpdate()
 end
 
 function formatCharName(name)
