@@ -3,42 +3,30 @@ package-as: CharacterNotes
 externals:
     Libs/AceAddon-3.0:
         url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceAddon-3.0
-        tag: latest
     Libs/AceConfig-3.0:
         url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceConfig-3.0
-        tag: latest
     Libs/AceConsole-3.0:
         url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceConsole-3.0
-        tag: latest
     Libs/AceDB-3.0:
         url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceDB-3.0
-        tag: latest
     Libs/AceDBOptions-3.0:
         url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceDBOptions-3.0
-        tag: latest
     Libs/AceEvent-3.0:
         url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceEvent-3.0
-        tag: latest
     Libs/AceGUI-3.0:
         url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceGUI-3.0
-        tag: latest
     Libs/AceHook-3.0:
         url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceHook-3.0
-        tag: latest
     Libs/AceLocale-3.0:
         url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceLocale-3.0
-        tag: latest
     Libs/AceTimer-3.0:
         url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceTimer-3.0
-        tag: latest
 
     Libs/LibDeformat-3.0: 
         url: git://git.wowace.com/wow/libdeformat-3-0/mainline.git
-        tag: latest
 
     Libs/lib-st: 
         url: svn://svn.wowace.com/wow/lib-st/mainline/trunk
-        tag: latest
 
     Libs/LibDataBroker-1.1:
         url: git://git.wowace.com/wow/libdatabroker-1-1/mainline.git
@@ -46,7 +34,6 @@ externals:
 
     Libs/LibDBIcon-1.0:
         url: svn://svn.wowace.com/wow/libdbicon-1-0/mainline/trunk/LibDBIcon-1.0
-        tag: latest
 
     Libs/LibStub:
         url: svn://svn.wowace.com/wow/libstub/mainline/trunk
@@ -57,7 +44,6 @@ externals:
 
     Libs/LibAlts-1.0:
         url: svn://svn.wowace.com/wow/libalts-1-0/mainline/trunk
-        tag: latest
 
 ignore:
     - .pkgmeta
