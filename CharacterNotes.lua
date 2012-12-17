@@ -1,4 +1,14 @@
-CharacterNotes = LibStub("AceAddon-3.0"):NewAddon("CharacterNotes", "AceConsole-3.0", "AceHook-3.0", "AceEvent-3.0", "AceTimer-3.0")
+local _G = getfenv(0)
+
+local string = _G.string
+local table = _G.table
+local math = _G.math
+local pairs = _G.pairs
+local ipairs = _G.ipairs
+local select = _G.select
+local LibStub = _G.LibStub
+
+local CharacterNotes = LibStub("AceAddon-3.0"):NewAddon("CharacterNotes", "AceConsole-3.0", "AceHook-3.0", "AceEvent-3.0", "AceTimer-3.0")
 
 local ADDON_NAME = ...
 local ADDON_VERSION = "@project-version@"
@@ -8,8 +18,8 @@ local CURRENT_BUILD, CURRENT_INTERNAL,
 
 -- Local versions for performance
 local tinsert, tremove, tconcat = table.insert, table.remove, table.concat
-local pairs, ipairs = pairs, ipairs
 local sub = string.sub
+local wipe = _G.wipe
 
 local DEBUG = false
 
@@ -81,7 +91,7 @@ local editNoteFrame = nil
 local confirmDeleteFrame = nil
 local notesData = {}
 local previousGroup = {}
-local playerName = GetUnitName("player", true)
+local playerName = _G.GetUnitName("player", true)
 
 local RATING_COL = 1
 local NAME_COL = 2
@@ -353,7 +363,7 @@ function CharacterNotes:GetOptions()
                             type = "execute",
                             width = "normal",
                             func = function()
-                            	local optionsFrame = InterfaceOptionsFrame
+                            	local optionsFrame = _G.InterfaceOptionsFrame
                                 optionsFrame:Hide()
                                 self:NotesExportHandler("")
                             end,
@@ -371,7 +381,7 @@ function CharacterNotes:GetOptions()
                             width = "normal",
                             disabled = true,
                             func = function()
-                            	local optionsFrame = InterfaceOptionsFrame
+                            	local optionsFrame = _G.InterfaceOptionsFrame
                                 optionsFrame:Hide()
                                 self:NotesImportHandler("")
                             end,
@@ -387,7 +397,7 @@ function CharacterNotes:GetOptions()
 end
 
 function CharacterNotes:ShowOptions()
-	InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Main)
+	_G.InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Main)
 end
 
 function CharacterNotes:OnInitialize()
@@ -403,7 +413,7 @@ function CharacterNotes:OnInitialize()
 	--    "CharacterNotes", ADDON_NAME)
 
     -- Register the options table
-    local displayName = GetAddOnMetadata(ADDON_NAME, "Title")
+    local displayName = _G.GetAddOnMetadata(ADDON_NAME, "Title")
 	local options = self:GetOptions()
     LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable(displayName, options)
     self.optionsFrame = {}
@@ -430,7 +440,7 @@ function CharacterNotes:OnInitialize()
 		icon = "Interface\\Icons\\INV_Misc_Note_06.blp",
 		OnClick = function(clickedframe, button)
     		if button == "RightButton" then
-    			local optionsFrame = InterfaceOptionsFrame
+    			local optionsFrame = _G.InterfaceOptionsFrame
 
     			if optionsFrame:IsVisible() then
     				optionsFrame:Hide()
@@ -442,7 +452,7 @@ function CharacterNotes:OnInitialize()
     			if self:IsNotesVisible() then
     				self:HideNotesWindow()
     			else
-        			local optionsFrame = InterfaceOptionsFrame
+        			local optionsFrame = _G.InterfaceOptionsFrame
     			    optionsFrame:Hide()
     				self:NotesHandler("")
     			end
@@ -470,20 +480,20 @@ function CharacterNotes:OnInitialize()
 end
 
 function CharacterNotes:CreateCharNoteTooltip()
-    CharNoteTooltip = CreateFrame("GameTooltip", "CharNoteTooltip", UIParent, "GameTooltipTemplate")
-    CharNoteTooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
+    CharNoteTooltip = _G.CreateFrame("GameTooltip", "CharNoteTooltip", _G.UIParent, "GameTooltipTemplate")
+    CharNoteTooltip:SetOwner(_G.WorldFrame, "ANCHOR_NONE")
 	CharNoteTooltip:SetFrameStrata("DIALOG")
     CharNoteTooltip:SetSize(100,100)
     CharNoteTooltip:SetPadding(16)
     if self.db.profile.remember_tooltip_pos == false or self.db.profile.tooltip_x == nil or self.db.profile.tooltip_y == nil then
         CharNoteTooltip:SetPoint("TOPLEFT", "ChatFrame1", "TOPRIGHT", 20, 0)
     else
-        CharNoteTooltip:SetPoint("CENTER", UIParent, "CENTER", self.db.profile.tooltip_x, self.db.profile.tooltip_y)
+        CharNoteTooltip:SetPoint("CENTER", _G.UIParent, "CENTER", self.db.profile.tooltip_x, self.db.profile.tooltip_y)
     end
 	CharNoteTooltip:EnableMouse(true)
 	CharNoteTooltip:SetToplevel(true)
     CharNoteTooltip:SetMovable(true)
-    GameTooltip_OnLoad(CharNoteTooltip)
+    _G.GameTooltip_OnLoad(CharNoteTooltip)
     CharNoteTooltip:SetUserPlaced(false)
 
 	CharNoteTooltip:RegisterForDrag("LeftButton")
@@ -494,18 +504,18 @@ function CharacterNotes:CreateCharNoteTooltip()
 	end)
 	CharNoteTooltip:SetScript("OnDragStop", function(self)
 		self:StopMovingOrSizing()
-		local scale = self:GetEffectiveScale() / UIParent:GetEffectiveScale()
+		local scale = self:GetEffectiveScale() / _G.UIParent:GetEffectiveScale()
 		local x, y = self:GetCenter()
 		x, y = x * scale, y * scale
-		x = x - GetScreenWidth()/2
-		y = y - GetScreenHeight()/2
+		x = x - _G.GetScreenWidth()/2
+		y = y - _G.GetScreenHeight()/2
 		x = x / self:GetScale()
 		y = y / self:GetScale()
 		CharacterNotes.db.profile.tooltip_x, CharacterNotes.db.profile.tooltip_y = x, y
 		self:SetUserPlaced(false);
 	end)
 	
-	local closebutton = CreateFrame("Button", "CharNoteTooltipCloseButton", CharNoteTooltip)
+	local closebutton = _G.CreateFrame("Button", "CharNoteTooltipCloseButton", CharNoteTooltip)
 	closebutton:SetSize(32,32)
 	closebutton:SetPoint("TOPRIGHT", 1, 0)
 
@@ -514,7 +524,7 @@ function CharacterNotes:CreateCharNoteTooltip()
 	closebutton:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight", "ADD")
 	
 	closebutton:SetScript("OnClick", function(self)
-	    HideUIPanel(CharNoteTooltip)
+	    _G.HideUIPanel(CharNoteTooltip)
 	end)
 end
 
@@ -551,8 +561,8 @@ function CharacterNotes:DelNoteHandler(input)
 	if input and #input > 0 then
 		name, note = input:match("^(%S+) *(.*)")
 	else
-		if UnitExists("target") and UnitIsPlayer("target") then
-			local target = GetUnitName("target", true)
+		if _G.UnitExists("target") and _G.UnitIsPlayer("target") then
+			local target = _G.GetUnitName("target", true)
 			if target and #target > 0 then
 				name = target
 			end
@@ -574,8 +584,8 @@ function CharacterNotes:DelRatingHandler(input)
 	if input and #input > 0 then
 		name, note = input:match("^(%S+) *(.*)")
 	else
-		if UnitExists("target") and UnitIsPlayer("target") then
-			local target = GetUnitName("target", true)
+		if _G.UnitExists("target") and _G.UnitIsPlayer("target") then
+			local target = _G.GetUnitName("target", true)
 			if target and #target > 0 then
 				name = target
 			end
@@ -828,16 +838,16 @@ function CharacterNotes:ShowNotesExportFrame()
 end
 
 function CharacterNotes:CreateNotesFrame()
-	local noteswindow = CreateFrame("Frame", "CharacterNotesWindow", UIParent)
+	local noteswindow = _G.CreateFrame("Frame", "CharacterNotesWindow", _G.UIParent)
 	noteswindow:SetFrameStrata("DIALOG")
 	noteswindow:SetToplevel(true)
 	noteswindow:SetWidth(630)
 	noteswindow:SetHeight(430)
 	if self.db.profile.remember_main_pos then
-    	noteswindow:SetPoint("CENTER", UIParent, "CENTER", 
+    	noteswindow:SetPoint("CENTER", _G.UIParent, "CENTER", 
     	    self.db.profile.notes_window_x, self.db.profile.notes_window_y)
     else
-    	noteswindow:SetPoint("CENTER", UIParent)
+    	noteswindow:SetPoint("CENTER", _G.UIParent)
     end
 	noteswindow:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background", 
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
@@ -917,8 +927,8 @@ function CharacterNotes:CreateNotesFrame()
 	headertext:SetPoint("TOP", noteswindow, "TOP", 0, -20)
 	headertext:SetText(L["Character Notes"])
 
-	local searchterm = CreateFrame("EditBox", nil, noteswindow, "InputBoxTemplate")
-	searchterm:SetFontObject(ChatFontNormal)
+	local searchterm = _G.CreateFrame("EditBox", nil, noteswindow, "InputBoxTemplate")
+	searchterm:SetFontObject(_G.ChatFontNormal)
 	searchterm:SetWidth(300)
 	searchterm:SetHeight(35)
 	searchterm:SetPoint("TOPLEFT", noteswindow, "TOPLEFT", 25, -50)
@@ -933,14 +943,14 @@ function CharacterNotes:CreateNotesFrame()
 	table.frame:SetPoint("TOP", searchterm, "BOTTOM", 0, -20)
 	table.frame:SetPoint("LEFT", noteswindow, "LEFT", 20, 0)
 
-	local searchbutton = CreateFrame("Button", nil, noteswindow, "UIPanelButtonTemplate")
+	local searchbutton = _G.CreateFrame("Button", nil, noteswindow, "UIPanelButtonTemplate")
 	searchbutton:SetText(L["Search"])
 	searchbutton:SetWidth(100)
 	searchbutton:SetHeight(20)
 	searchbutton:SetPoint("LEFT", searchterm, "RIGHT", 10, 0)
 	searchbutton:SetScript("OnClick", function(this) this:GetParent().table:SortData() end)
 
-	local clearbutton = CreateFrame("Button", nil, noteswindow, "UIPanelButtonTemplate")
+	local clearbutton = _G.CreateFrame("Button", nil, noteswindow, "UIPanelButtonTemplate")
 	clearbutton:SetText(L["Clear"])
 	clearbutton:SetWidth(100)
 	clearbutton:SetHeight(20)
@@ -951,14 +961,14 @@ function CharacterNotes:CreateNotesFrame()
 	        this:GetParent().table:SortData()
 	    end)
 
-	local closebutton = CreateFrame("Button", nil, noteswindow, "UIPanelButtonTemplate")
+	local closebutton = _G.CreateFrame("Button", nil, noteswindow, "UIPanelButtonTemplate")
 	closebutton:SetText(L["Close"])
 	closebutton:SetWidth(90)
 	closebutton:SetHeight(20)
 	closebutton:SetPoint("BOTTOM", noteswindow, "BOTTOM", 0, 20)
 	closebutton:SetScript("OnClick", function(this) this:GetParent():Hide(); end)
 
-	local deletebutton = CreateFrame("Button", nil, noteswindow, "UIPanelButtonTemplate")
+	local deletebutton = _G.CreateFrame("Button", nil, noteswindow, "UIPanelButtonTemplate")
 	deletebutton:SetText(L["Delete"])
 	deletebutton:SetWidth(90)
 	deletebutton:SetHeight(20)
@@ -976,7 +986,7 @@ function CharacterNotes:CreateNotesFrame()
 			end
 		end)
 
-	local editbutton = CreateFrame("Button", nil, noteswindow, "UIPanelButtonTemplate")
+	local editbutton = _G.CreateFrame("Button", nil, noteswindow, "UIPanelButtonTemplate")
 	editbutton:SetText(L["Edit"])
 	editbutton:SetWidth(90)
 	editbutton:SetHeight(20)
@@ -1040,11 +1050,11 @@ function CharacterNotes:CreateNotesFrame()
         function(self)
             self:StopMovingOrSizing()
 			if CharacterNotes.db.profile.remember_main_pos then
-    			local scale = self:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    			local scale = self:GetEffectiveScale() / _G.UIParent:GetEffectiveScale()
     			local x, y = self:GetCenter()
     			x, y = x * scale, y * scale
-    			x = x - GetScreenWidth()/2
-    			y = y - GetScreenHeight()/2
+    			x = x - _G.GetScreenWidth()/2
+    			y = y - _G.GetScreenHeight()/2
     			x = x / self:GetScale()
     			y = y / self:GetScale()
     			CharacterNotes.db.profile.notes_window_x, 
@@ -1086,12 +1096,12 @@ function CharacterNotes:NotesDBCheckHandler(input)
 end
 
 function CharacterNotes:CreateConfirmDeleteFrame()
-	local deletewindow = CreateFrame("Frame", "CharacterNotesConfirmDeleteWindow", UIParent)
+	local deletewindow = _G.CreateFrame("Frame", "CharacterNotesConfirmDeleteWindow", _G.UIParent)
 	deletewindow:SetFrameStrata("DIALOG")
 	deletewindow:SetToplevel(true)
 	deletewindow:SetWidth(400)
 	deletewindow:SetHeight(200)
-	deletewindow:SetPoint("CENTER", UIParent)
+	deletewindow:SetPoint("CENTER", _G.UIParent)
 	deletewindow:SetBackdrop(
 		{bgFile="Interface\\ChatFrame\\ChatFrameBackground", 
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
@@ -1111,7 +1121,7 @@ function CharacterNotes:CreateConfirmDeleteFrame()
 	charname:SetFont(charname:GetFont(), 14)
 	charname:SetTextColor(1.0,1.0,1.0,1)
 
-	local deletebutton = CreateFrame("Button", nil, deletewindow, "UIPanelButtonTemplate")
+	local deletebutton = _G.CreateFrame("Button", nil, deletewindow, "UIPanelButtonTemplate")
 	deletebutton:SetText(L["Delete"])
 	deletebutton:SetWidth(100)
 	deletebutton:SetHeight(20)
@@ -1122,7 +1132,7 @@ function CharacterNotes:CreateConfirmDeleteFrame()
 	        this:GetParent():Hide()
 	    end)
 
-	local cancelbutton = CreateFrame("Button", nil, deletewindow, "UIPanelButtonTemplate")
+	local cancelbutton = _G.CreateFrame("Button", nil, deletewindow, "UIPanelButtonTemplate")
 	cancelbutton:SetText(L["Cancel"])
 	cancelbutton:SetWidth(100)
 	cancelbutton:SetHeight(20)
@@ -1149,19 +1159,19 @@ function CharacterNotes:CreateConfirmDeleteFrame()
 end
 
 function CharacterNotes:CreateEditNoteFrame()
-	local editwindow = CreateFrame("Frame", "CharacterNotesEditWindow", UIParent)
+	local editwindow = _G.CreateFrame("Frame", "CharacterNotesEditWindow", _G.UIParent)
 	editwindow:SetFrameStrata("DIALOG")
 	editwindow:SetToplevel(true)
 	editwindow:SetWidth(400)
 	editwindow:SetHeight(280)
-	editwindow:SetPoint("CENTER", UIParent)
+	editwindow:SetPoint("CENTER", _G.UIParent)
 	editwindow:SetBackdrop(
 		{bgFile="Interface\\ChatFrame\\ChatFrameBackground", 
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
 		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
 	editwindow:SetBackdropColor(0,0,0,1)
 
-	local savebutton = CreateFrame("Button", nil, editwindow, "UIPanelButtonTemplate")
+	local savebutton = _G.CreateFrame("Button", nil, editwindow, "UIPanelButtonTemplate")
 	savebutton:SetText(L["Save"])
 	savebutton:SetWidth(100)
 	savebutton:SetHeight(20)
@@ -1169,12 +1179,12 @@ function CharacterNotes:CreateEditNoteFrame()
 	savebutton:SetScript("OnClick",
 	    function(this)
 	        local frame = this:GetParent()
-	        local rating = UIDropDownMenu_GetSelectedValue(editwindow.ratingDropdown)
+	        local rating = _G.UIDropDownMenu_GetSelectedValue(editwindow.ratingDropdown)
 	        self:SaveEditNote(frame.charname:GetText(),frame.editbox:GetText(), rating)
 	        frame:Hide()
 	    end)
 
-	local cancelbutton = CreateFrame("Button", nil, editwindow, "UIPanelButtonTemplate")
+	local cancelbutton = _G.CreateFrame("Button", nil, editwindow, "UIPanelButtonTemplate")
 	cancelbutton:SetText(L["Cancel"])
 	cancelbutton:SetWidth(100)
 	cancelbutton:SetHeight(20)
@@ -1196,30 +1206,30 @@ function CharacterNotes:CreateEditNoteFrame()
 	ratingLabel:SetTextColor(1.0,1.0,1.0,1)
     ratingLabel:SetText(L["Rating"]..":")
 
-    local ratingDropdown = CreateFrame("Button", "CN_RatingDropDown", editwindow, "UIDropDownMenuTemplate")
+    local ratingDropdown = _G.CreateFrame("Button", "CN_RatingDropDown", editwindow, "UIDropDownMenuTemplate")
     ratingDropdown:ClearAllPoints()
     ratingDropdown:SetPoint("TOPLEFT", ratingLabel, "TOPRIGHT", 7, 5)
     ratingDropdown:Show()
-    UIDropDownMenu_Initialize(ratingDropdown, function(self, level)
+    _G.UIDropDownMenu_Initialize(ratingDropdown, function(self, level)
         local info = nil
         for i = -1, 1 do
-            info = UIDropDownMenu_CreateInfo()
+            info = _G.UIDropDownMenu_CreateInfo()
             local ratingInfo = RATING_OPTIONS[i]
             info.text = ratingInfo[1]
             info.value = i
             info.colorCode = ratingInfo[2]
             info.func = function(self) 
-                UIDropDownMenu_SetSelectedValue(ratingDropdown, self.value)
+                _G.UIDropDownMenu_SetSelectedValue(ratingDropdown, self.value)
             end
-            UIDropDownMenu_AddButton(info, level)
+            _G.UIDropDownMenu_AddButton(info, level)
         end
     end)
-    UIDropDownMenu_SetWidth(ratingDropdown, 100);
-    UIDropDownMenu_SetButtonWidth(ratingDropdown, 124)
-    UIDropDownMenu_SetSelectedValue(ratingDropdown, 0)
-    UIDropDownMenu_JustifyText(ratingDropdown, "LEFT")
+    _G.UIDropDownMenu_SetWidth(ratingDropdown, 100);
+    _G.UIDropDownMenu_SetButtonWidth(ratingDropdown, 124)
+    _G.UIDropDownMenu_SetSelectedValue(ratingDropdown, 0)
+    _G.UIDropDownMenu_JustifyText(ratingDropdown, "LEFT")
 
-    local editBoxContainer = CreateFrame("Frame", nil, editwindow)
+    local editBoxContainer = _G.CreateFrame("Frame", nil, editwindow)
     editBoxContainer:SetPoint("TOPLEFT", editwindow, "TOPLEFT", 20, -150)
     editBoxContainer:SetPoint("BOTTOMRIGHT", editwindow, "BOTTOMRIGHT", -40, 50)
 	editBoxContainer:SetBackdrop(
@@ -1228,12 +1238,12 @@ function CharacterNotes:CreateEditNoteFrame()
 		tileSize=16, edgeSize=16, insets={left=4, right=3, top=4, bottom=3}})
 	editBoxContainer:SetBackdropColor(0,0,0,0.9)
 
-    local scrollArea = CreateFrame("ScrollFrame", "CN_EditNote_EditScroll", editwindow, "UIPanelScrollFrameTemplate")
+    local scrollArea = _G.CreateFrame("ScrollFrame", "CN_EditNote_EditScroll", editwindow, "UIPanelScrollFrameTemplate")
     scrollArea:SetPoint("TOPLEFT", editBoxContainer, "TOPLEFT", 6, -6)
     scrollArea:SetPoint("BOTTOMRIGHT", editBoxContainer, "BOTTOMRIGHT", -6, 6)
 
-	local editbox = CreateFrame("EditBox", "CN_EditNote_EditBox", editwindow)
-	editbox:SetFontObject(ChatFontNormal)
+	local editbox = _G.CreateFrame("EditBox", "CN_EditNote_EditBox", editwindow)
+	editbox:SetFontObject(_G.ChatFontNormal)
 	editbox:SetMultiLine(true)
 	editbox:SetAutoFocus(true)
 	editbox:SetWidth(300)
@@ -1243,7 +1253,7 @@ function CharacterNotes:CreateEditNoteFrame()
 	editbox:SetScript("OnEnterPressed",
 	    function(this)
 	        local frame = this:GetParent():GetParent()
-	        local rating = UIDropDownMenu_GetSelectedValue(editwindow.ratingDropdown)
+	        local rating = _G.UIDropDownMenu_GetSelectedValue(editwindow.ratingDropdown)
 	        self:SaveEditNote(frame.charname:GetText(),frame.editbox:GetText(),rating)
 	        frame:Hide()
 	    end)
@@ -1306,7 +1316,7 @@ function CharacterNotes:ShowEditNoteFrame(name, note)
 
     local text =  AGU:Create("Label")
     text:SetText(name)
-    text:SetFont(GameFontNormalLarge:GetFont())
+    text:SetFont(_G.GameFontNormalLarge:GetFont())
     text.label:SetJustifyH("CENTER")
     text:SetFullWidth(true)
     text:SetCallback("OnRelease",
@@ -1341,8 +1351,8 @@ function CharacterNotes:EditNoteHandler(input)
 	if input and #input > 0 then
 		name = input
 	else
-		if UnitExists("target") and UnitIsPlayer("target") then
-			local target = GetUnitName("target", true)
+		if _G.UnitExists("target") and _G.UnitIsPlayer("target") then
+			local target = _G.GetUnitName("target", true)
 			if target and #target > 0 then
 				name = target
 			end
@@ -1362,10 +1372,10 @@ function CharacterNotes:EditNoteHandler(input)
 		editwindow:Show()
 		editwindow:Raise()
 
-		UIDropDownMenu_SetSelectedValue(editwindow.ratingDropdown, rating)
+		_G.UIDropDownMenu_SetSelectedValue(editwindow.ratingDropdown, rating)
         local ratingInfo = RATING_OPTIONS[rating]
         if ratingInfo and ratingInfo[1] and ratingInfo[2] then
-		    UIDropDownMenu_SetText(editwindow.ratingDropdown, ratingInfo[2]..ratingInfo[1].."|r")
+		    _G.UIDropDownMenu_SetText(editwindow.ratingDropdown, ratingInfo[2]..ratingInfo[1].."|r")
         end
 	end	
 end
@@ -1387,7 +1397,7 @@ end
 
 function CharacterNotes:OnEnable()
     -- Hook the game tooltip so we can add character Notes
-    self:HookScript(GameTooltip, "OnTooltipSetUnit")
+    self:HookScript(_G.GameTooltip, "OnTooltipSetUnit")
 
 	-- Hook the friends frame tooltip
 	--self:HookScript("FriendsFrameTooltip_Show")
@@ -1417,7 +1427,7 @@ function CharacterNotes:OnEnable()
     -- Enable note links
     self:EnableNoteLinks()
 	
-	playerName = GetUnitName("player", true)
+	playerName = _G.GetUnitName("player", true)
 end
 
 function CharacterNotes:EnableNoteLinks()
@@ -1427,8 +1437,8 @@ function CharacterNotes:EnableNoteLinks()
     	    self:RawHook(nil, "SetItemRef", true)
         end
     	-- Hook SetHyperlink so we can redirect charnote links
-        if not self:IsHooked(ItemRefTooltip, "SetHyperlink") then
-    	    self:RawHook(ItemRefTooltip, "SetHyperlink", true)
+        if not self:IsHooked(_G.ItemRefTooltip, "SetHyperlink") then
+    	    self:RawHook(_G.ItemRefTooltip, "SetHyperlink", true)
         end
         -- Hook chat frames so we can edit the messages
         self:HookChatFrames()
@@ -1437,7 +1447,7 @@ end
 
 function CharacterNotes:DisableNoteLinks()
 	self:Unhook(nil, "SetItemRef")
-	self:Unhook(ItemRefTooltip, "SetHyperlink")
+	self:Unhook(_G.ItemRefTooltip, "SetHyperlink")
     self:UnhookChatFrames()
 end
 
@@ -1461,9 +1471,9 @@ function CharacterNotes:SetItemRef(link, text, button, ...)
 		name = formatCharName(name)
 		local note = self:GetNote(name) or ""
 		-- Display a link
-        ShowUIPanel(CharNoteTooltip)
+        _G.ShowUIPanel(CharNoteTooltip)
         if (not CharNoteTooltip:IsVisible()) then
-            CharNoteTooltip:SetOwner(UIParent, "ANCHOR_PRESERVE")
+            CharNoteTooltip:SetOwner(_G.UIParent, "ANCHOR_PRESERVE")
         end
         CharNoteTooltip:ClearLines()
         CharNoteTooltip:AddLine(name, 1, 1, 0)
@@ -1481,25 +1491,25 @@ function CharacterNotes:SetHyperlink(frame, link, ...)
 end
 
 function CharacterNotes:AddEditNoteMenuItem()
-	UnitPopupButtons["EDIT_NOTE"] = {text = L["Edit Note"], dist = 0}
+	_G.UnitPopupButtons["EDIT_NOTE"] = {text = L["Edit Note"], dist = 0}
 
 	self:SecureHook("UnitPopup_OnClick", "EditNoteMenuClick")
 
-	tinsert(UnitPopupMenus["PLAYER"], (#UnitPopupMenus["PLAYER"])-1, "EDIT_NOTE")
-	tinsert(UnitPopupMenus["PARTY"], (#UnitPopupMenus["PARTY"])-1, "EDIT_NOTE")
-	tinsert(UnitPopupMenus["FRIEND"], (#UnitPopupMenus["FRIEND"])-1, "EDIT_NOTE")
-	tinsert(UnitPopupMenus["FRIEND_OFFLINE"], (#UnitPopupMenus["FRIEND_OFFLINE"])-1, "EDIT_NOTE")
-	tinsert(UnitPopupMenus["RAID_PLAYER"], (#UnitPopupMenus["RAID_PLAYER"])-1, "EDIT_NOTE")
+	tinsert(_G.UnitPopupMenus["PLAYER"], (#_G.UnitPopupMenus["PLAYER"])-1, "EDIT_NOTE")
+	tinsert(_G.UnitPopupMenus["PARTY"], (#_G.UnitPopupMenus["PARTY"])-1, "EDIT_NOTE")
+	tinsert(_G.UnitPopupMenus["FRIEND"], (#_G.UnitPopupMenus["FRIEND"])-1, "EDIT_NOTE")
+	tinsert(_G.UnitPopupMenus["FRIEND_OFFLINE"], (#_G.UnitPopupMenus["FRIEND_OFFLINE"])-1, "EDIT_NOTE")
+	tinsert(_G.UnitPopupMenus["RAID_PLAYER"], (#_G.UnitPopupMenus["RAID_PLAYER"])-1, "EDIT_NOTE")
 end
 
 function CharacterNotes:RemoveEditNoteMenuItem()
-	UnitPopupButtons["EDIT_NOTE"] = nil
+	_G.UnitPopupButtons["EDIT_NOTE"] = nil
 
 	self:unhook("UnitPopup_OnClick")
 end
 
 function CharacterNotes:EditNoteMenuClick(self)
-	local menu = UIDROPDOWNMENU_INIT_MENU
+	local menu = _G.UIDROPDOWNMENU_INIT_MENU
 	local button = self.value
 	if button == "EDIT_NOTE" then
 		local fullname = nil
@@ -1674,9 +1684,9 @@ function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
     local note, rating
 
 	-- If the unit exists and is a player then check if there is a note for it.
-    if UnitExists(unitid) and UnitIsPlayer(unitid) then
+    if _G.UnitExists(unitid) and _G.UnitIsPlayer(unitid) then
 		-- Get the unit's name including the realm name
-		name = GetUnitName(unitid, true) or name
+		name = _G.GetUnitName(unitid, true) or name
         note, rating, main = self:GetInfoForNameOrMain(name)
 
         if note then
@@ -1697,10 +1707,11 @@ function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
 end
 
 function CharacterNotes:GetFriendNote(friendName)
-    numFriends = GetNumFriends()
+    local numFriends = _G.GetNumFriends()
     if numFriends > 0 then
         for i = 1, numFriends do
-            name, level, class, area, connected, status, note = GetFriendInfo(i)
+            local name, level, class, area, connected, status, note = 
+				_G.GetFriendInfo(i)
             if friendName == name then
                 return note
             end
@@ -1727,9 +1738,9 @@ function CharacterNotes:DisplayNote(name, type)
 end
 
 function CharacterNotes:HookChatFrames()
-    for i = 1, NUM_CHAT_WINDOWS do
+    for i = 1, _G.NUM_CHAT_WINDOWS do
         local chatFrame = _G["ChatFrame" .. i]
-        if chatFrame ~= COMBATLOG then
+        if chatFrame ~= _G.COMBATLOG then
             if not self:IsHooked(chatFrame, "AddMessage") then
                 self:RawHook(chatFrame, "AddMessage", true)
             end
@@ -1738,9 +1749,9 @@ function CharacterNotes:HookChatFrames()
 end
 
 function CharacterNotes:UnhookChatFrames()
-    for i = 1, NUM_CHAT_WINDOWS do
+    for i = 1, _G.NUM_CHAT_WINDOWS do
         local chatFrame = _G["ChatFrame" .. i]
-        if chatFrame ~= COMBATLOG then
+        if chatFrame ~= _G.COMBATLOG then
             self:Unhook(chatFrame, "AddMessage")
         end
     end
@@ -1765,7 +1776,7 @@ local function AddNoteForChat(message, name)
 end
 
 function CharacterNotes:AddMessage(frame, text, r, g, b, id, ...)
-    if text and type(text) == "string" and self.db.profile.noteLinksInChat == true then
+    if text and _G.type(text) == "string" and self.db.profile.noteLinksInChat == true then
         -- If no charnotes are present then insert one.
         if text:find("|Hcharnote:") == nil then
             text = text:gsub("(|Hplayer:([^:]+).-|h.-|h)", AddNoteForChat)
@@ -1778,17 +1789,17 @@ function CharacterNotes:CHAT_MSG_SYSTEM(event, message)
 	local name, type
 
     if self.db.profile.showNotesOnWho == true then
-	    name = LibDeformat(message, WHO_LIST_FORMAT)
+	    name = LibDeformat(message, _G.WHO_LIST_FORMAT)
 	    type = "WHO"
     end
 
 	if not name and self.db.profile.showNotesOnWho == true then 
-	    name = LibDeformat(message, WHO_LIST_GUILD_FORMAT)
+	    name = LibDeformat(message, _G.WHO_LIST_GUILD_FORMAT)
 	    type = "WHO"
 	end
 
 	if not name and self.db.profile.showNotesOnLogon == true then
-	    name = LibDeformat(message, ERR_FRIEND_ONLINE_SS)
+	    name = LibDeformat(message, _G.ERR_FRIEND_ONLINE_SS)
 	    type = "LOGON"
 	end
 
@@ -1798,11 +1809,11 @@ function CharacterNotes:CHAT_MSG_SYSTEM(event, message)
 end
 
 local function GetGroupTypeAndNumber()
-	local numRaid = GetNumRaidMembers()
+	local numRaid = _G.GetNumRaidMembers()
 	if numRaid > 0 then
 		return "raid", numRaid
 	else
-		return "party", GetNumPartyMembers()
+		return "party", _G.GetNumPartyMembers()
 	end
 end
 
@@ -1811,8 +1822,8 @@ function CharacterNotes:ProcessGroupRosterUpdate()
 	local numMembers = 0
 
 	if CURRENT_UI_VERSION >= 50000 then
-		numMembers = GetNumGroupMembers()
-		if IsInRaid() then
+		numMembers = _G.GetNumGroupMembers()
+		if _G.IsInRaid() then
 			groupType = "raid"
 		end
 	else
@@ -1833,7 +1844,7 @@ function CharacterNotes:ProcessGroupRosterUpdate()
         local name
 
         for i = 1, numMembers do
-            name = GetUnitName(groupType..i, true)
+            name = _G.GetUnitName(groupType..i, true)
             if name then
                 currentGroup[name] = true
 
