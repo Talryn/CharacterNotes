@@ -77,6 +77,13 @@ local defaults = {
 		exportUseNote = true,
 		exportUseRating = true,
 		exportEscape = true,
+		menusToModify = {
+			["PLAYER"] = true, 
+			["PARTY"] = true, 
+			["FRIEND"] = true, 
+			["FRIEND_OFFLINE"] = true, 
+			["RAID_PLAYER"] = true,
+		},
 	},
 	realm = {
 	    notes = {},
@@ -1422,7 +1429,7 @@ function CharacterNotes:OnEnable()
 	confirmDeleteFrame = self:CreateConfirmDeleteFrame()
 	
 	-- Add the Edit Note menu item on unit frames
-	self:AddEditNoteMenuItem()
+	self:AddToUnitPopupMenu()
 
     -- Enable note links
     self:EnableNoteLinks()
@@ -1462,7 +1469,7 @@ function CharacterNotes:OnDisable()
 	end
 	
 	-- Remove the menu items
-	self:RemoveEditNoteMenuItem()
+	self:RemoveFromUnitPopupMenu()
 end
 
 function CharacterNotes:SetItemRef(link, text, button, ...)
@@ -1490,40 +1497,57 @@ function CharacterNotes:SetHyperlink(frame, link, ...)
     return self.hooks[frame].SetHyperlink(frame, link, ...)
 end
 
-function CharacterNotes:AddEditNoteMenuItem()
-	_G.UnitPopupButtons["EDIT_NOTE"] = {text = L["Edit Note"], dist = 0}
+function CharacterNotes:AddToUnitPopupMenu()
+	_G.UnitPopupButtons["CN_EDIT_NOTE"] = {text = L["Edit Note"], dist = 0}
 
-	self:SecureHook("UnitPopup_OnClick", "EditNoteMenuClick")
-
-	tinsert(_G.UnitPopupMenus["PLAYER"], (#_G.UnitPopupMenus["PLAYER"])-1, "EDIT_NOTE")
-	tinsert(_G.UnitPopupMenus["PARTY"], (#_G.UnitPopupMenus["PARTY"])-1, "EDIT_NOTE")
-	tinsert(_G.UnitPopupMenus["FRIEND"], (#_G.UnitPopupMenus["FRIEND"])-1, "EDIT_NOTE")
-	tinsert(_G.UnitPopupMenus["FRIEND_OFFLINE"], (#_G.UnitPopupMenus["FRIEND_OFFLINE"])-1, "EDIT_NOTE")
-	tinsert(_G.UnitPopupMenus["RAID_PLAYER"], (#_G.UnitPopupMenus["RAID_PLAYER"])-1, "EDIT_NOTE")
-end
-
-function CharacterNotes:RemoveEditNoteMenuItem()
-	_G.UnitPopupButtons["EDIT_NOTE"] = nil
-
-	self:unhook("UnitPopup_OnClick")
-end
-
-function CharacterNotes:EditNoteMenuClick(self)
-	local menu = _G.UIDROPDOWNMENU_INIT_MENU
-	local button = self.value
-	if button == "EDIT_NOTE" then
-		local fullname = nil
-		local name = menu.name
-		local server = menu.server
-		if server and #server > 0 then
-			local strFormat = "%s - %s"
-			fullname = strFormat:format(name, server)
-		else
-			fullname = name
+	for menu, enabled in pairs(self.db.profile.menusToModify) do
+		if menu and enabled then
+			tinsert(_G.UnitPopupMenus[menu], 
+				#_G.UnitPopupMenus[menu], 
+				"CN_EDIT_NOTE")
 		end
-
-		CharacterNotes:EditNoteHandler(fullname)
 	end
+
+	self:SecureHook("UnitPopup_ShowMenu")
+end
+
+function CharacterNotes:RemoveFromUnitPopupMenu()
+	self:Unhook("UnitPopup_ShowMenu")
+
+	for menu in pairs(_G.UnitPopupMenus) do
+		for i = #_G.UnitPopupMenus[menu], 1, -1 do
+			if _G.UnitPopupMenus[menu][i] == "CN_EDIT_NOTE" then
+				tremove(_G.UnitPopupMenus[menu], i)
+				break
+			end
+		end
+	end
+
+	_G.UnitPopupButtons["CN_EDIT_NOTE"] = nil
+end
+
+function CharacterNotes:UnitPopup_ShowMenu(dropdownMenu, which, unit, name, userData, ...)
+	for i = 1, _G.UIDROPDOWNMENU_MAXBUTTONS do
+		local button = _G["DropDownList".._G.UIDROPDOWNMENU_MENU_LEVEL.."Button"..i]
+		if button.value == "CN_EDIT_NOTE" then
+		    button.func = CharacterNotes.EditNoteMenuClick
+		end
+	end
+end
+
+function CharacterNotes:EditNoteMenuClick()
+	local menu = _G.UIDROPDOWNMENU_INIT_MENU
+	local fullname = nil
+	local name = menu.name
+	local server = menu.server
+	if server and #server > 0 then
+		local strFormat = "%s - %s"
+		fullname = strFormat:format(name, server)
+	else
+		fullname = name
+	end
+
+	CharacterNotes:EditNoteHandler(fullname)
 end
 
 function CharacterNotes:IsNotesVisible()
