@@ -411,6 +411,9 @@ function CharacterNotes:OnInitialize()
     -- Called when the addon is loaded
     self.db = LibStub("AceDB-3.0"):New("CharacterNotesDB", defaults, "Default")
 
+	-- Migrate the names for patch 5.4
+	self:RemoveSpacesFromRealm()
+
 	-- Build the table data for the Notes window
 	self:BuildTableData()
 
@@ -1541,7 +1544,7 @@ function CharacterNotes:EditNoteMenuClick()
 	local name = menu.name
 	local server = menu.server
 	if server and #server > 0 then
-		local strFormat = "%s - %s"
+		local strFormat = "%s-%s"
 		fullname = strFormat:format(name, server)
 	else
 		fullname = name
@@ -1886,6 +1889,39 @@ function CharacterNotes:ProcessGroupRosterUpdate()
         for name in pairs(currentGroup) do
             previousGroup[name] = true
         end
+	end
+end
+
+-- Patch 5.4 will change the formatting of names with realms appended.
+-- Remove the spaces surrounding the dash between the name and realm.
+function CharacterNotes:RemoveSpacesFromRealm()
+	if not self.db.realm.removedSpacesFromRealm then
+		self.db.realm.oldNotes = self.db.realm.notes
+		self.db.realm.oldRatings = self.db.realm.ratings
+		local invalidNotes = {}
+		for name, note in pairs(self.db.realm.notes) do
+			if name:gmatch("[ ][-][ ]") then
+				invalidNotes[name] = note
+			end
+		end
+		for name, note in pairs(invalidNotes) do
+			local newName = name:gsub("[ ][-][ ]", "-", 1)
+			self.db.realm.notes[name] = nil
+			self.db.realm.notes[newName] = note
+		end
+
+		local invalidRatings = {}
+		for name, rating in pairs(self.db.realm.ratings) do
+			if name:gmatch("[ ][-][ ]") then
+				invalidRatings[name] = rating
+			end
+		end
+		for name, rating in pairs(invalidRatings) do
+			local newName = name:gsub("[ ][-][ ]", "-", 1)
+			self.db.realm.ratings[name] = nil
+			self.db.realm.ratings[newName] = rating
+		end
+		self.db.realm.removedSpacesFromRealm = true
 	end
 end
 
