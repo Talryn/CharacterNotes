@@ -1896,31 +1896,59 @@ end
 -- Remove the spaces surrounding the dash between the name and realm.
 function CharacterNotes:RemoveSpacesFromRealm()
 	if not self.db.realm.removedSpacesFromRealm then
-		self.db.realm.oldNotes = self.db.realm.notes
-		self.db.realm.oldRatings = self.db.realm.ratings
+		-- Find notes to be updated.
+		local check
+		local noteCount = 0
 		local invalidNotes = {}
 		for name, note in pairs(self.db.realm.notes) do
-			if name:gmatch("[ ][-][ ]") then
+			check = name:gmatch("[ ][-][ ]")
+			if check and check() then
+				noteCount = noteCount + 1
 				invalidNotes[name] = note
 			end
 		end
-		for name, note in pairs(invalidNotes) do
-			local newName = name:gsub("[ ][-][ ]", "-", 1)
-			self.db.realm.notes[name] = nil
-			self.db.realm.notes[newName] = note
+		if self.db.profile.verbose then
+			local fmt = "Found %d notes with realm names to update."
+			self:Print(fmt:format(noteCount))
 		end
-
+		local ratingCount = 0
 		local invalidRatings = {}
 		for name, rating in pairs(self.db.realm.ratings) do
-			if name:gmatch("[ ][-][ ]") then
+			check = name:gmatch("[ ][-][ ]")
+			if check and check() then
+				ratingCount = ratingCount + 1
 				invalidRatings[name] = rating
 			end
 		end
-		for name, rating in pairs(invalidRatings) do
-			local newName = name:gsub("[ ][-][ ]", "-", 1)
-			self.db.realm.ratings[name] = nil
-			self.db.realm.ratings[newName] = rating
+		if self.db.profile.verbose then
+			local fmt = "Found %d ratings with realm names to update."
+			self:Print(fmt:format(ratingCount))
 		end
+
+		if noteCount > 0 or ratingCount > 0 then
+			-- Backup the notes and ratings to be safe.
+			self.db.realm.oldNotes = {}
+			for name, note in pairs(self.db.realm.notes) do
+				self.db.realm.oldNotes[name] = note
+			end
+			self.db.realm.oldRatings = {}
+			for name, rating in pairs(self.db.realm.ratings) do
+				self.db.realm.oldRatings[name] = rating
+			end
+			-- Update notes.
+			for name, note in pairs(invalidNotes) do
+				local newName = name:gsub("[ ][-][ ]", "-", 1)
+				self.db.realm.notes[name] = nil
+				self.db.realm.notes[newName] = note
+			end
+			-- Update ratings.
+			for name, rating in pairs(invalidRatings) do
+				local newName = name:gsub("[ ][-][ ]", "-", 1)
+				self.db.realm.ratings[name] = nil
+				self.db.realm.ratings[newName] = rating
+			end
+		end
+
 		self.db.realm.removedSpacesFromRealm = true
 	end
 end
