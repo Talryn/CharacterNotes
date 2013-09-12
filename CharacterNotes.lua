@@ -1925,21 +1925,25 @@ function CharacterNotes:RemoveSpacesFromRealm()
 			self:Print(fmt:format(ratingCount))
 		end
 
-		if noteCount > 0 or ratingCount > 0 then
-			-- Backup the notes and ratings to be safe.
+		if noteCount > 0 then
+			-- Backup the notes to be safe.
 			self.db.realm.oldNotes = {}
 			for name, note in pairs(self.db.realm.notes) do
 				self.db.realm.oldNotes[name] = note
-			end
-			self.db.realm.oldRatings = {}
-			for name, rating in pairs(self.db.realm.ratings) do
-				self.db.realm.oldRatings[name] = rating
 			end
 			-- Update notes.
 			for name, note in pairs(invalidNotes) do
 				local newName = name:gsub("[ ][-][ ]", "-", 1)
 				self.db.realm.notes[name] = nil
 				self.db.realm.notes[newName] = note
+			end
+		end
+
+		if ratingCount > 0 then
+			-- Backup the ratings to be safe.
+			self.db.realm.oldRatings = {}
+			for name, rating in pairs(self.db.realm.ratings) do
+				self.db.realm.oldRatings[name] = rating
 			end
 			-- Update ratings.
 			for name, rating in pairs(invalidRatings) do
