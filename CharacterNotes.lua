@@ -1215,7 +1215,7 @@ function CharacterNotes:CreateConfirmDeleteFrame()
 	deletebutton:SetPoint("BOTTOM", deletewindow, "BOTTOM", -60, 20)
 	deletebutton:SetScript("OnClick",
 	    function(this)
-	        self:DeleteNote(charname:GetText())
+	        NotesDB:DeleteNote(charname:GetText())
 	        this:GetParent():Hide()
 	    end)
 
@@ -1472,7 +1472,7 @@ function CharacterNotes:SaveEditNote(name, note, rating)
 		NotesDB:SetNote(name, note)
 
         if rating then
-            self:SetRating(name, rating)
+            NotesDB:SetRating(name, rating)
         end
 	end
 
