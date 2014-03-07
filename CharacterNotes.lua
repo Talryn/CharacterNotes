@@ -10,8 +10,10 @@ local LibStub = _G.LibStub
 
 local CharacterNotes = LibStub("AceAddon-3.0"):NewAddon("CharacterNotes", "AceConsole-3.0", "AceHook-3.0", "AceEvent-3.0", "AceTimer-3.0")
 
-local ADDON_NAME = ...
+local ADDON_NAME, AddonData = ...
 local ADDON_VERSION = "@project-version@"
+
+local NotesDB = AddonData.NotesDB
 
 local CURRENT_BUILD, CURRENT_INTERNAL, 
     CURRENT_BUILD_DATE, CURRENT_UI_VERSION = GetBuildInfo()
@@ -41,7 +43,6 @@ local CharNoteTooltip = nil
 
 -- Functions defined at the end of the file.
 local wrap
-local formatCharName
 
 -- String formats
 local chatNoteFormat = "%s%s: "..WHITE.."%s".."|r"
@@ -411,6 +412,8 @@ function CharacterNotes:OnInitialize()
     -- Called when the addon is loaded
     self.db = LibStub("AceDB-3.0"):New("CharacterNotesDB", defaults, "Default")
 
+	NotesDB:OnInitialize(self)
+
 	-- Migrate the names for patch 5.4
 	self:RemoveSpacesFromRealm()
 
@@ -553,9 +556,9 @@ end
 function CharacterNotes:SetNoteHandler(input)
 	if input and #input > 0 then
 		local name, note = input:match("^(%S+) *(.*)")
-		name = formatCharName(name)
+		name = NotesDB:FormatUnitName(name)
 		if note and #note > 0 then
-			self:SetNote(name, note)
+			NotesDB:SetNote(name, note)
 			if self.db.profile.verbose == true then
 				local strFormat = L["Set note for %s: %s"]
 				self:Print(strFormat:format(name, note))
@@ -580,8 +583,8 @@ function CharacterNotes:DelNoteHandler(input)
 	end
 	
 	if name and #name > 0 then
-		name = formatCharName(name)
-		self:DeleteNote(name)
+		name = NotesDB:FormatUnitName(name)
+		NotesDB:DeleteNote(name)
 		if self.db.profile.verbose == true then
 			local strFormat = L["Deleted note for %s"]
 			self:Print(strFormat:format(name))
@@ -603,8 +606,8 @@ function CharacterNotes:DelRatingHandler(input)
 	end
 	
 	if name and #name > 0 then
-		name = formatCharName(name)
-		self:DeleteRating(name)
+		name = NotesDB:FormatUnitName(name)
+		NotesDB:DeleteRating(name)
 		if self.db.profile.verbose == true then
 			local strFormat = L["Deleted rating for %s"]
 			self:Print(strFormat:format(name))
@@ -612,20 +615,94 @@ function CharacterNotes:DelRatingHandler(input)
 	end	
 end
 
+function CharacterNotes:UpdateNote(name, note)
+	local found = false
+	for i, v in ipairs(notesData) do
+		if v[NAME_COL] == name then
+			notesData[i][NOTE_COL] = note
+			found = true
+		end
+	end
+	
+	if found == false then
+		tinsert(notesData, {
+		    [RATING_COL] = (NotesDB:GetRating(name) or 0),
+		    [NAME_COL] = name, 
+		    [NOTE_COL] = note})
+	end
+
+	-- If the Notes window is shown then we need to update it
+	if notesFrame:IsVisible() then
+		notesFrame.table:SortData()
+	end
+end
+
+function CharacterNotes:UpdateRating(name, rating)
+	local found = false
+	for i, v in ipairs(notesData) do
+		if v[NAME_COL] == name then
+			notesData[i][RATING_COL] = rating
+			found = true
+		end
+	end
+	
+	if found == false then
+		tinsert(notesData, {
+		    [RATING_COL] = rating, 
+		    [NAME_COL] = name, 
+		    [NOTE_COL] = NotesDB:GetNote(name)})
+	end
+
+	-- If the Notes window is shown then we need to update it
+	if notesFrame:IsVisible() then
+		notesFrame.table:SortData()
+	end
+end
+
+function CharacterNotes:RemoveNote(name)
+	for i, v in ipairs(notesData) do
+		if v[NAME_COL] == name then
+		    tremove(notesData, i)
+		end
+	end
+	
+	-- If the Notes window is shown then we need to update it
+	if notesFrame:IsVisible() then
+		notesFrame.table:SortData()
+	end
+end
+
+function CharacterNotes:RemoveRating(name)
+	for i, v in ipairs(notesData) do
+		if v[NAME_COL] == name then
+		    if v[NOTE_COL] == nil then
+			    tremove(notesData, i)
+            else
+                v[RATING_COL] = 0
+            end
+		end
+	end
+	
+	-- If the Notes window is shown then we need to update it
+	if notesFrame:IsVisible() then
+		notesFrame.table:SortData()
+	end
+end
+
 function CharacterNotes:GetNoteHandler(input)
 	if input and #input > 0 then
 		local name, note = input:match("^(%S+) *(.*)")
-		name = formatCharName(name)
+		name = NotesDB:FormatUnitName(name)
 
-        local note, rating, main = self:GetInfoForNameOrMain(name)
+        local note, rating, main, nameFound = NotesDB:GetInfoForNameOrMain(name)
 
 		if note then
 		    if main and #main > 0 then
 			    self:Print(chatNoteWithMainFormat:format(
-			        GetRatingColor(rating), name, main, note or ""))
+			        GetRatingColor(rating), name, nameFound, note or ""))
 	        else
 			    self:Print(chatNoteFormat:format(
-			        GetRatingColor(rating), name, note or ""))
+			        GetRatingColor(rating), nameFound, note or ""))
 			end
 		else
 			self:Print(L["No note found for "]..name)
@@ -691,7 +768,7 @@ function CharacterNotes:GenerateNotesExport()
             tinsert(fields, escapeField(note, quote))
         end
         if self.db.profile.exportUseRating == true then
-            rating = (self:GetRating(name) or 0)
+            rating = (NotesDB:GetRating(name) or 0)
             tinsert(fields, rating)
         end
 
@@ -1094,7 +1171,7 @@ end
 function CharacterNotes:NotesDBCheckHandler(input)
     for name, note in pairs(self.db.realm.notes) do
         if name then
-            if name ~= formatCharName(name) then
+            if name ~= NotesDB:FormatUnitName(name) then
                 self:Print("Name "..name.." doesn't match the formatted name.")
             end
         else
@@ -1370,14 +1447,14 @@ function CharacterNotes:EditNoteHandler(input)
 	end
 	
 	if name and #name > 0 then
-		name = formatCharName(name)
+		name = NotesDB:FormatUnitName(name)
 		
-		local charNote = self:GetNote(name) or ""
-		local rating = self:GetRating(name) or 0
+		local charNote, nameFound = NotesDB:GetNote(name)
+		local rating = NotesDB:GetRating(nameFound) or 0
 
 		local editwindow = editNoteFrame
-		editwindow.charname:SetText(name)
-		editwindow.editbox:SetText(charNote)
+		editwindow.charname:SetText(nameFound)
+		editwindow.editbox:SetText(charNote or "")
 
 		editwindow:Show()
 		editwindow:Raise()
@@ -1392,7 +1469,7 @@ end
 
 function CharacterNotes:SaveEditNote(name, note, rating)
 	if name and #name > 0 and note and #note > 0 then
-		self:SetNote(name, note)
+		NotesDB:SetNote(name, note)
 
         if rating then
             self:SetRating(name, rating)
@@ -1406,6 +1483,8 @@ function CharacterNotes:SaveEditNote(name, note, rating)
 end
 
 function CharacterNotes:OnEnable()
+	NotesDB:OnEnable()
+
     -- Hook the game tooltip so we can add character Notes
     self:HookScript(_G.GameTooltip, "OnTooltipSetUnit")
 
@@ -1478,16 +1557,16 @@ end
 function CharacterNotes:SetItemRef(link, text, button, ...)
 	if link and link:match("^charnote:") then
 		local name = sub(link, 10)
-		name = formatCharName(name)
-		local note = self:GetNote(name) or ""
+		name = NotesDB:FormatUnitName(name)
+		local note, nameFound = NotesDB:GetNote(name)
 		-- Display a link
         _G.ShowUIPanel(CharNoteTooltip)
         if (not CharNoteTooltip:IsVisible()) then
             CharNoteTooltip:SetOwner(_G.UIParent, "ANCHOR_PRESERVE")
         end
         CharNoteTooltip:ClearLines()
-        CharNoteTooltip:AddLine(name, 1, 1, 0)
-        CharNoteTooltip:AddLine(note, 1, 1, 1, true)
+        CharNoteTooltip:AddLine(nameFound, 1, 1, 0)
+        CharNoteTooltip:AddLine(note or "", 1, 1, 1, true)
         CharNoteTooltip:SetBackdropBorderColor(1, 1, 1, 1)
         CharNoteTooltip:Show()
 		return nil
@@ -1569,138 +1648,10 @@ function CharacterNotes:BuildTableData()
 	local key, value = nil, nil
 	for key, value in pairs(self.db.realm.notes) do
 		tinsert(notesData, {
-		    [RATING_COL] = (self:GetRating(key) or 0), 
+		    [RATING_COL] = (NotesDB:GetRating(key) or 0), 
 		    [NAME_COL] = key, 
 		    [NOTE_COL] = value})
 	end
-end
-
-function CharacterNotes:SetNote(name, note)
-	if self.db.realm.notes and name then
-	    name = formatCharName(name)
-		self.db.realm.notes[name] = note;
-
-		local found = false
-		for i, v in ipairs(notesData) do
-			if v[NAME_COL] == name then
-				notesData[i][NOTE_COL] = note
-				found = true
-			end
-		end
-		
-		if found == false then
-			tinsert(notesData, {
-			    [RATING_COL] = (self:GetRating(name) or 0),
-			    [NAME_COL] = name, 
-			    [NOTE_COL] = note})
-		end
-
-		-- If the Notes window is shown then we need to update it
-		if notesFrame:IsVisible() then
-			notesFrame.table:SortData()
-		end
-	end
-end
-
-function CharacterNotes:SetRating(name, rating)
-	if self.db.realm.ratings and name and rating >= -1 and rating <= 1 then
-	    name = formatCharName(name)
-		self.db.realm.ratings[name] = rating
-
-		local found = false
-		for i, v in ipairs(notesData) do
-			if v[NAME_COL] == name then
-				notesData[i][RATING_COL] = rating
-				found = true
-			end
-		end
-		
-		if found == false then
-			tinsert(notesData, {
-			    [RATING_COL] = rating, 
-			    [NAME_COL] = name, 
-			    [NOTE_COL] = self:GetNote(name)})
-		end
-
-		-- If the Notes window is shown then we need to update it
-		if notesFrame:IsVisible() then
-			notesFrame.table:SortData()
-		end
-    end
-end
-
-function CharacterNotes:GetNote(name)
-	if self.db.realm.notes and name then
-	    name = formatCharName(name)
-		return self.db.realm.notes[name]
-	end
-end
-
-function CharacterNotes:GetRating(name)
-	if self.db.realm.ratings and name then
-	    name = formatCharName(name)
-		return self.db.realm.ratings[name]
-	end
-end
-
-function CharacterNotes:DeleteNote(name)
-	if self.db.realm.notes and name then
-        -- Delete both the note and the rating.
-		self.db.realm.notes[name] = nil;
-		self.db.realm.ratings[name] = nil;
-		
-		for i, v in ipairs(notesData) do
-			if v[NAME_COL] == name then
-			    tremove(notesData, i)
-			end
-		end
-		
-		-- If the Notes window is shown then we need to update it
-		if notesFrame:IsVisible() then
-			notesFrame.table:SortData()
-		end
-	end
-end
-
-function CharacterNotes:DeleteRating(name)
-	if self.db.realm.ratings and name then
-		self.db.realm.ratings[name] = nil;
-		
-		for i, v in ipairs(notesData) do
-			if v[NAME_COL] == name then
-			    if v[NOTE_COL] == nil then
-				    tremove(notesData, i)
-                else
-                    v[RATING_COL] = 0
-                end
-			end
-		end
-		
-		-- If the Notes window is shown then we need to update it
-		if notesFrame:IsVisible() then
-			notesFrame.table:SortData()
-		end
-	end
-end
-
-function CharacterNotes:GetInfoForNameOrMain(name)
-    local note = self:GetNote(name)
-    local rating = self:GetRating(name)
-    local main = nil
-    -- If there is no note then check if this character has a main 
-    -- and if so if there is a note for that character.
-    if not note then
-        if self.db.profile.useLibAlts == true and LibAlts and LibAlts.GetMain then
-            main = LibAlts:GetMain(name)
-            if main and #main > 0 then
-                main = formatCharName(main)
-                note = self:GetNote(main)
-                rating = self:GetRating(main)
-            end
-        end
-    end
-    
-    return note, rating, main
 end
 
 function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
@@ -1708,13 +1659,13 @@ function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
 
     local main
     local name, unitid = tooltip:GetUnit()
-    local note, rating
+    local note, rating, nameFound
 
 	-- If the unit exists and is a player then check if there is a note for it.
     if _G.UnitExists(unitid) and _G.UnitIsPlayer(unitid) then
 		-- Get the unit's name including the realm name
 		name = _G.GetUnitName(unitid, true) or name
-        note, rating, main = self:GetInfoForNameOrMain(name)
+        note, rating, main, nameFound = NotesDB:GetInfoForNameOrMain(name)
 
         if note then
 			if self.db.profile.wrapTooltip == true then
@@ -1723,7 +1674,7 @@ function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
 
             if main and #main > 0 then
         	    tooltip:AddLine(tooltipNoteWithMainFormat:format(
-        	        GetRatingColor(rating), main, note))
+        	        GetRatingColor(rating), nameFound, note))
         	else
         	    tooltip:AddLine(
         	        tooltipNoteFormat:format(GetRatingColor(rating), note), 
@@ -1750,16 +1701,16 @@ end
 
 function CharacterNotes:DisplayNote(name, type)
     local main
-    name = formatCharName(name)
+    name = NotesDB:FormatUnitName(name)
     
-    local note, rating, main = self:GetInfoForNameOrMain(name)
+    local note, rating, main, nameFound = NotesDB:GetInfoForNameOrMain(name)
 	if note then
 	    if main and #main > 0 then
 		    self:Print(chatNoteWithMainFormat:format(
-		        GetRatingColor(rating), name, main, note))	        
+		        GetRatingColor(rating), name, nameFound, note))	        
         else
 		    self:Print(chatNoteFormat:format(
-		        GetRatingColor(rating), name, note))
+		        GetRatingColor(rating), nameFound, note))
 		end
 	end
 end
@@ -1792,10 +1743,10 @@ end
 
 local function AddNoteForChat(message, name)
     if name and #name > 0 then
-        local note = CharacterNotes:GetNote(name)
+        local note, nameFound = NotesDB:GetNote(name)
         if note and #note > 0 then
             local messageFmt = "%s %s"
-            return messageFmt:format(message, CharacterNotes:CreateNoteLink(name,"note"))
+            return messageFmt:format(message, CharacterNotes:CreateNoteLink(nameFound,"note"))
         end
     end
     
@@ -1967,18 +1918,6 @@ end
 
 function CharacterNotes:GROUP_ROSTER_UPDATE(event, message)
 	self:ProcessGroupRosterUpdate()
-end
-
-function formatCharName(name)
-    local MULTIBYTE_FIRST_CHAR = "^([\192-\255]?%a?[\128-\191]*)"
-    if not name then return "" end
-    
-    -- Change the string up to a - to lower case.
-    -- Limiting it in case a server name is present in the name.
-    name = name:gsub("^([^%-]+)", string.lower)
-    -- Change the first character to uppercase accounting for multibyte characters.
-    name = name:gsub(MULTIBYTE_FIRST_CHAR, string.upper, 1)
-    return name
 end
 
 function wrap(str, limit, indent, indent1,offset)

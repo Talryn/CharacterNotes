@@ -12,4 +12,5 @@ embeds.xml
 
 locale.xml
 
+NotesDB.lua
 CharacterNotes.lua
