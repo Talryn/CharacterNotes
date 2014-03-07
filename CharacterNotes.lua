@@ -1453,7 +1453,7 @@ function CharacterNotes:EditNoteHandler(input)
 		local rating = NotesDB:GetRating(nameFound) or 0
 
 		local editwindow = editNoteFrame
-		editwindow.charname:SetText(nameFound)
+		editwindow.charname:SetText(charNote and nameFound or name)
 		editwindow.editbox:SetText(charNote or "")
 
 		editwindow:Show()
@@ -1619,16 +1619,7 @@ end
 
 function CharacterNotes:EditNoteMenuClick()
 	local menu = _G.UIDROPDOWNMENU_INIT_MENU
-	local fullname = nil
-	local name = menu.name
-	local server = menu.server
-	if server and #server > 0 then
-		local strFormat = "%s-%s"
-		fullname = strFormat:format(name, server)
-	else
-		fullname = name
-	end
-
+	local fullname = NotesDB:FormatNameWithRealm(menu.name, menu.server)
 	CharacterNotes:EditNoteHandler(fullname)
 end
 

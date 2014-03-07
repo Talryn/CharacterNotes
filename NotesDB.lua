@@ -161,8 +161,9 @@ function NotesDB:GetNote(name)
 		local nameFound = self:FormatUnitName(name)
 		local note = self.db.realm.notes[nameFound]
 		if not note then
-			nameFound = self:GetAlternateName(name)
-			note = self.db.realm.notes[nameFound]
+			local altName = self:GetAlternateName(name)
+			note = self.db.realm.notes[altName]
+			if note then nameFound = altName end
 		end
 		return note, nameFound
 	end
@@ -173,8 +174,9 @@ function NotesDB:GetRating(name)
 		local nameFound = self:FormatUnitName(name)
 		local rating = self.db.realm.ratings[nameFound]
 		if not rating then
-			nameFound = self:GetAlternateName(name)
-			rating = self.db.realm.ratings[nameFound]
+			local altName = self:GetAlternateName(name)
+			rating = self.db.realm.ratings[altName]
+			if rating then nameFound = altName end
 		end
 		return rating, nameFound
 
