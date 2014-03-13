@@ -23,8 +23,6 @@ local tinsert, tremove, tconcat = table.insert, table.remove, table.concat
 local sub = string.sub
 local wipe = _G.wipe
 
-local DEBUG = false
-
 local L = LibStub("AceLocale-3.0"):GetLocale("CharacterNotes", true)
 local AGU = LibStub("AceGUI-3.0")
 local LibDeformat = LibStub("LibDeformat-3.0")
@@ -56,6 +54,7 @@ local defaults = {
 			hide = true,
 		},
 		verbose = true,
+		debug = false,
 		mouseoverHighlighting = true,
 		showNotesOnWho = true,
 		showNotesOnLogon = true,
@@ -442,6 +441,7 @@ function CharacterNotes:OnInitialize()
 	self:RegisterChatCommand("getnote", "GetNoteHandler")
 	self:RegisterChatCommand("editnote", "EditNoteHandler")
 	self:RegisterChatCommand("notes", "NotesHandler")
+	self:RegisterChatCommand("notesoptions", "NotesOptionsHandler")
 	self:RegisterChatCommand("searchnote", "NotesHandler")
 	self:RegisterChatCommand("notesexport", "NotesExportHandler")
 	self:RegisterChatCommand("notesimport", "NotesImportHandler")
@@ -1168,6 +1168,32 @@ function CharacterNotes:NotesHandler(input)
 	notesFrame:Raise()
 end
 
+local function splitWords(str)
+  local w = {}
+  local function helper(word) table.insert(w, word) return nil end
+  str:gsub("(%w+)", helper)
+  return w
+end
+
+function CharacterNotes:NotesOptionsHandler(input)
+	if input and #input > 0 then
+		local cmds = splitWords(input)
+        if cmds[1] and cmds[1] == "debug" then
+			if cmds[2] and cmds[2] == "on" then
+				self.db.profile.debug = true
+	            self:Print("Debugging on.  Use '/notesoptions debug off' to disable.")
+		    elseif cmds[2] and cmds[2] == "off" then
+				self.db.profile.debug = false
+	            self:Print("Debugging off.")
+			else
+				self:Print("Debugging is "..(self.db.profile.debug and "on." or "off."))
+			end
+		end
+	else
+		self:ShowOptions()
+	end
+end
+
 function CharacterNotes:NotesDBCheckHandler(input)
     for name, note in pairs(self.db.realm.notes) do
         if name then
@@ -1620,6 +1646,12 @@ end
 function CharacterNotes:EditNoteMenuClick()
 	local menu = _G.UIDROPDOWNMENU_INIT_MENU
 	local fullname = NotesDB:FormatNameWithRealm(menu.name, menu.server)
+    if CharacterNotes.db.profile.debug then
+		local strFormat = "Menu Click: %s - %s -> %s"
+        CharacterNotes:Print(strFormat:format(
+			_G.tostring(menu.name), _G.tostring(menu.server),
+			_G.tostring(fullname)))
+    end
 	CharacterNotes:EditNoteHandler(fullname)
 end
 
@@ -1818,9 +1850,9 @@ function CharacterNotes:ProcessGroupRosterUpdate()
                 currentGroup[name] = true
 
                 if name ~= playerName and not previousGroup[name] == true then
-                    if DEBUG == true then
-                        self:Print(name.." joined the group.")
-                    end
+                    --if self.db.profile.debug then
+                    --    self:Print(name.." joined the group.")
+                    --end
                     self:DisplayNote(name)
                 end
             end
