@@ -1125,7 +1125,7 @@ function CharacterNotes:CreateNotesFrame()
 
     noteswindow.lock = self.db.profile.lock_main_window
     
-    noteswindow:SetMovable()
+    noteswindow:SetMovable(true)
     noteswindow:RegisterForDrag("LeftButton")
     noteswindow:SetScript("OnDragStart",
         function(self,button)
@@ -1254,7 +1254,7 @@ function CharacterNotes:CreateConfirmDeleteFrame()
 
 	deletewindow.charname = charname
 
-    deletewindow:SetMovable()
+    deletewindow:SetMovable(true)
     deletewindow:RegisterForDrag("LeftButton")
     deletewindow:SetScript("OnDragStart",
         function(this,button)
@@ -1394,7 +1394,7 @@ function CharacterNotes:CreateEditNoteFrame()
 	editwindow.editbox = editbox
 	editwindow.ratingDropdown = ratingDropdown
 
-    editwindow:SetMovable()
+    editwindow:SetMovable(true)
     editwindow:RegisterForDrag("LeftButton")
     editwindow:SetScript("OnDragStart",
         function(this,button)
