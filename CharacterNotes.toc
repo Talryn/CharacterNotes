@@ -1,4 +1,4 @@
-## Interface: 60100
+## Interface: 60200
 ## Title: Character Notes
 ## Notes: Set and manage character notes that are displayed in unit tooltips and /who results.
 ## Author: Talryn
