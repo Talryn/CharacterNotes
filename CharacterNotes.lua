@@ -42,7 +42,7 @@ local CharNoteTooltip = nil
 -- Functions defined at the end of the file.
 local wrap
 
--- String formats
+-- String formats 
 local chatNoteFormat = "%s%s: "..WHITE.."%s".."|r"
 local chatNoteWithMainFormat = "%s%s (%s): "..WHITE.."%s".."|r"
 local tooltipNoteFormat = "%s"..L["Note: "]..WHITE.."%s".."|r"
