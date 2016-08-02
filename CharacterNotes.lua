@@ -1150,9 +1150,7 @@ function CharacterNotes:CreateNotesFrame()
             end
         end)
     noteswindow:EnableMouse(true)
-
 	noteswindow:Hide()
-	
 	return noteswindow
 end
 
