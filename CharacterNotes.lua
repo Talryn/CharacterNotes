@@ -497,7 +497,7 @@ function CharacterNotes:CreateCharNoteTooltip()
     CharNoteTooltip:SetOwner(_G.WorldFrame, "ANCHOR_NONE")
 	CharNoteTooltip:SetFrameStrata("DIALOG")
     CharNoteTooltip:SetSize(100,100)
-    CharNoteTooltip:SetPadding(16)
+    CharNoteTooltip:SetPadding(16,0)
     if self.db.profile.remember_tooltip_pos == false or self.db.profile.tooltip_x == nil or self.db.profile.tooltip_y == nil then
         CharNoteTooltip:SetPoint("TOPLEFT", "ChatFrame1", "TOPRIGHT", 20, 0)
     else
