@@ -15,7 +15,7 @@ local ADDON_VERSION = "@project-version@"
 
 local NotesDB = AddonData.NotesDB
 
-local CURRENT_BUILD, CURRENT_INTERNAL, 
+local CURRENT_BUILD, CURRENT_INTERNAL,
     CURRENT_BUILD_DATE, CURRENT_UI_VERSION = GetBuildInfo()
 
 -- Local versions for performance
@@ -42,7 +42,7 @@ local CharNoteTooltip = nil
 -- Functions defined at the end of the file.
 local wrap
 
--- String formats 
+-- String formats
 local chatNoteFormat = "%s%s: "..WHITE.."%s".."|r"
 local chatNoteWithMainFormat = "%s%s (%s): "..WHITE.."%s".."|r"
 local tooltipNoteFormat = "%s"..L["Note: "]..WHITE.."%s".."|r"
@@ -78,11 +78,12 @@ local defaults = {
 		exportUseRating = true,
 		exportEscape = true,
 		menusToModify = {
-			["PLAYER"] = true, 
-			["PARTY"] = true, 
-			["FRIEND"] = true, 
-			["FRIEND_OFFLINE"] = true, 
+			["PLAYER"] = true,
+			["PARTY"] = true,
+			["FRIEND"] = true,
+			["FRIEND_OFFLINE"] = true,
 			["RAID_PLAYER"] = true,
+      ["CHAT_ROSTER"] = true,
 		},
 	},
 	realm = {
@@ -482,7 +483,7 @@ function CharacterNotes:OnInitialize()
 		end
 	})
 	icon:Register("CharacterNotesLDB", noteLDB, self.db.profile.minimap)
-	
+
 	if not CharNoteTooltip then
 	    self:CreateCharNoteTooltip()
     end
@@ -527,7 +528,7 @@ function CharacterNotes:CreateCharNoteTooltip()
 		CharacterNotes.db.profile.tooltip_x, CharacterNotes.db.profile.tooltip_y = x, y
 		self:SetUserPlaced(false);
 	end)
-	
+
 	local closebutton = _G.CreateFrame("Button", "CharNoteTooltipCloseButton", CharNoteTooltip)
 	closebutton:SetSize(32,32)
 	closebutton:SetPoint("TOPRIGHT", 1, 0)
@@ -535,7 +536,7 @@ function CharacterNotes:CreateCharNoteTooltip()
 	closebutton:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
 	closebutton:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
 	closebutton:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight", "ADD")
-	
+
 	closebutton:SetScript("OnClick", function(self)
 	    _G.HideUIPanel(CharNoteTooltip)
 	end)
@@ -566,7 +567,7 @@ function CharacterNotes:SetNoteHandler(input)
 		else
 			self:Print(L["You must supply a note."])
 		end
-	end	
+	end
 end
 
 function CharacterNotes:DelNoteHandler(input)
@@ -581,7 +582,7 @@ function CharacterNotes:DelNoteHandler(input)
 			end
 		end
 	end
-	
+
 	if name and #name > 0 then
 		name = NotesDB:FormatUnitName(name)
 		NotesDB:DeleteNote(name)
@@ -589,7 +590,7 @@ function CharacterNotes:DelNoteHandler(input)
 			local strFormat = L["Deleted note for %s"]
 			self:Print(strFormat:format(name))
 		end
-	end	
+	end
 end
 
 function CharacterNotes:DelRatingHandler(input)
@@ -604,7 +605,7 @@ function CharacterNotes:DelRatingHandler(input)
 			end
 		end
 	end
-	
+
 	if name and #name > 0 then
 		name = NotesDB:FormatUnitName(name)
 		NotesDB:DeleteRating(name)
@@ -612,7 +613,7 @@ function CharacterNotes:DelRatingHandler(input)
 			local strFormat = L["Deleted rating for %s"]
 			self:Print(strFormat:format(name))
 		end
-	end	
+	end
 end
 
 function CharacterNotes:UpdateNote(name, note)
@@ -623,11 +624,11 @@ function CharacterNotes:UpdateNote(name, note)
 			found = true
 		end
 	end
-	
+
 	if found == false then
 		tinsert(notesData, {
 		    [RATING_COL] = (NotesDB:GetRating(name) or 0),
-		    [NAME_COL] = name, 
+		    [NAME_COL] = name,
 		    [NOTE_COL] = note})
 	end
 
@@ -645,11 +646,11 @@ function CharacterNotes:UpdateRating(name, rating)
 			found = true
 		end
 	end
-	
+
 	if found == false then
 		tinsert(notesData, {
-		    [RATING_COL] = rating, 
-		    [NAME_COL] = name, 
+		    [RATING_COL] = rating,
+		    [NAME_COL] = name,
 		    [NOTE_COL] = NotesDB:GetNote(name)})
 	end
 
@@ -665,7 +666,7 @@ function CharacterNotes:RemoveNote(name)
 		    tremove(notesData, i)
 		end
 	end
-	
+
 	-- If the Notes window is shown then we need to update it
 	if notesFrame:IsVisible() then
 		notesFrame.table:SortData()
@@ -682,7 +683,7 @@ function CharacterNotes:RemoveRating(name)
             end
 		end
 	end
-	
+
 	-- If the Notes window is shown then we need to update it
 	if notesFrame:IsVisible() then
 		notesFrame.table:SortData()
@@ -707,7 +708,7 @@ function CharacterNotes:GetNoteHandler(input)
 		else
 			self:Print(L["No note found for "]..name)
 		end
-	end	
+	end
 end
 
 function CharacterNotes:NotesExportHandler(input)
@@ -861,7 +862,7 @@ function CharacterNotes:ShowNotesExportFrame()
 
     local nameOption = AGU:Create("CheckBox")
     nameOption:SetLabel(L["Character Name"])
-    nameOption:SetCallback("OnValueChanged", 
+    nameOption:SetCallback("OnValueChanged",
         function(widget, event, value)
             self.db.profile.exportUseName = value
         end
@@ -871,7 +872,7 @@ function CharacterNotes:ShowNotesExportFrame()
 
     local noteOption = AGU:Create("CheckBox")
     noteOption:SetLabel(L["Note"])
-    noteOption:SetCallback("OnValueChanged", 
+    noteOption:SetCallback("OnValueChanged",
         function(widget, event, value)
             self.db.profile.exportUseNote = value
         end
@@ -881,7 +882,7 @@ function CharacterNotes:ShowNotesExportFrame()
 
     local ratingOption = AGU:Create("CheckBox")
     ratingOption:SetLabel(L["Rating"])
-    ratingOption:SetCallback("OnValueChanged", 
+    ratingOption:SetCallback("OnValueChanged",
         function(widget, event, value)
             self.db.profile.exportUseRating = value
         end
@@ -896,7 +897,7 @@ function CharacterNotes:ShowNotesExportFrame()
 
     local escapeOption = AGU:Create("CheckBox")
     escapeOption:SetLabel(L["NotesExport_Escape"])
-    escapeOption:SetCallback("OnValueChanged", 
+    escapeOption:SetCallback("OnValueChanged",
         function(widget, event, value)
             self.db.profile.exportEscape = value
         end
@@ -931,12 +932,12 @@ function CharacterNotes:CreateNotesFrame()
 	noteswindow:SetWidth(630)
 	noteswindow:SetHeight(430)
 	if self.db.profile.remember_main_pos then
-    	noteswindow:SetPoint("CENTER", _G.UIParent, "CENTER", 
+    	noteswindow:SetPoint("CENTER", _G.UIParent, "CENTER",
     	    self.db.profile.notes_window_x, self.db.profile.notes_window_y)
     else
     	noteswindow:SetPoint("CENTER", _G.UIParent)
     end
-	noteswindow:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background", 
+	noteswindow:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background",
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
 		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
 
@@ -959,7 +960,7 @@ function CharacterNotes:CreateNotesFrame()
 		},
 		["sortnext"] = NAME_COL,
 	  	["DoCellUpdate"] = function(rowFrame, cellFrame, data, cols, row, realrow, column, fShow, self, ...)
-	  	    if fShow then 
+	  	    if fShow then
 		        local image = GetRatingImage(data[realrow][RATING_COL])
 		        if image and #image > 0 then
 		            cellFrame:SetBackdrop( { bgFile = image } )
@@ -1021,7 +1022,7 @@ function CharacterNotes:CreateNotesFrame()
 	searchterm:SetPoint("TOPLEFT", noteswindow, "TOPLEFT", 25, -50)
 	searchterm:SetScript("OnShow", function(this) this:SetFocus() end)
 	searchterm:SetScript("OnEnterPressed", function(this) this:GetParent().table:SortData() end)
-	searchterm:SetScript("OnEscapePressed", 
+	searchterm:SetScript("OnEscapePressed",
 	    function(this)
 	        this:SetText("")
 	        this:GetParent():Hide()
@@ -1060,7 +1061,7 @@ function CharacterNotes:CreateNotesFrame()
 	deletebutton:SetWidth(90)
 	deletebutton:SetHeight(20)
 	deletebutton:SetPoint("BOTTOM", noteswindow, "BOTTOM", -60, 70)
-	deletebutton:SetScript("OnClick", 
+	deletebutton:SetScript("OnClick",
 		function(this)
 		    local frame = this:GetParent()
 			if frame.table:GetSelection() then
@@ -1078,7 +1079,7 @@ function CharacterNotes:CreateNotesFrame()
 	editbutton:SetWidth(90)
 	editbutton:SetHeight(20)
 	editbutton:SetPoint("BOTTOM", noteswindow, "BOTTOM", 60, 70)
-	editbutton:SetScript("OnClick", 
+	editbutton:SetScript("OnClick",
 		function(this)
 		    local frame = this:GetParent()
 			if frame.table:GetSelection() then
@@ -1124,7 +1125,7 @@ function CharacterNotes:CreateNotesFrame()
 	)
 
     noteswindow.lock = self.db.profile.lock_main_window
-    
+
     noteswindow:SetMovable(true)
     noteswindow:RegisterForDrag("LeftButton")
     noteswindow:SetScript("OnDragStart",
@@ -1144,7 +1145,7 @@ function CharacterNotes:CreateNotesFrame()
     			y = y - _G.GetScreenHeight()/2
     			x = x / self:GetScale()
     			y = y / self:GetScale()
-    			CharacterNotes.db.profile.notes_window_x, 
+    			CharacterNotes.db.profile.notes_window_x,
     			    CharacterNotes.db.profile.notes_window_y = x, y
     			self:SetUserPlaced(false);
             end
@@ -1202,7 +1203,7 @@ function CharacterNotes:NotesDBCheckHandler(input)
             self:Print("Found a note with a nil name value. ["..note or "nil".."]")
         end
     end
-    
+
     self:Print("Note DB Check finished.")
 end
 
@@ -1214,7 +1215,7 @@ function CharacterNotes:CreateConfirmDeleteFrame()
 	deletewindow:SetHeight(200)
 	deletewindow:SetPoint("CENTER", _G.UIParent)
 	deletewindow:SetBackdrop(
-		{bgFile="Interface\\ChatFrame\\ChatFrameBackground", 
+		{bgFile="Interface\\ChatFrame\\ChatFrameBackground",
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
 		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
 	deletewindow:SetBackdropColor(0,0,0,1)
@@ -1277,7 +1278,7 @@ function CharacterNotes:CreateEditNoteFrame()
 	editwindow:SetHeight(280)
 	editwindow:SetPoint("CENTER", _G.UIParent)
 	editwindow:SetBackdrop(
-		{bgFile="Interface\\ChatFrame\\ChatFrameBackground", 
+		{bgFile="Interface\\ChatFrame\\ChatFrameBackground",
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
 		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
 	editwindow:SetBackdropColor(0,0,0,1)
@@ -1329,7 +1330,7 @@ function CharacterNotes:CreateEditNoteFrame()
             info.text = ratingInfo[1]
             info.value = i
             info.colorCode = ratingInfo[2]
-            info.func = function(self) 
+            info.func = function(self)
                 _G.UIDropDownMenu_SetSelectedValue(ratingDropdown, self.value)
             end
             _G.UIDropDownMenu_AddButton(info, level)
@@ -1344,7 +1345,7 @@ function CharacterNotes:CreateEditNoteFrame()
     editBoxContainer:SetPoint("TOPLEFT", editwindow, "TOPLEFT", 20, -150)
     editBoxContainer:SetPoint("BOTTOMRIGHT", editwindow, "BOTTOMRIGHT", -40, 50)
 	editBoxContainer:SetBackdrop(
-		{bgFile="Interface\\Tooltips\\UI-Tooltip-Background", 
+		{bgFile="Interface\\Tooltips\\UI-Tooltip-Background",
 	    edgeFile="Interface\\Tooltips\\UI-Tooltip-Border", tile=true,
 		tileSize=16, edgeSize=16, insets={left=4, right=3, top=4, bottom=3}})
 	editBoxContainer:SetBackdropColor(0,0,0,0.9)
@@ -1469,10 +1470,10 @@ function CharacterNotes:EditNoteHandler(input)
 			end
 		end
 	end
-	
+
 	if name and #name > 0 then
 		name = NotesDB:FormatUnitName(name)
-		
+
 		local charNote, nameFound = NotesDB:GetNote(name)
 		local rating = NotesDB:GetRating(nameFound) or 0
 
@@ -1488,7 +1489,7 @@ function CharacterNotes:EditNoteHandler(input)
         if ratingInfo and ratingInfo[1] and ratingInfo[2] then
 		    _G.UIDropDownMenu_SetText(editwindow.ratingDropdown, ratingInfo[2]..ratingInfo[1].."|r")
         end
-	end	
+	end
 end
 
 function CharacterNotes:SaveEditNote(name, note, rating)
@@ -1527,19 +1528,19 @@ function CharacterNotes:OnEnable()
 	end
 	-- Create the Notes frame for later use
 	notesFrame = self:CreateNotesFrame()
-	
+
 	-- Create the Edit Note frame to use later
 	editNoteFrame = self:CreateEditNoteFrame()
-	
+
 	-- Create the Confirm Delete frame for later use
 	confirmDeleteFrame = self:CreateConfirmDeleteFrame()
-	
+
 	-- Add the Edit Note menu item on unit frames
 	self:AddToUnitPopupMenu()
 
     -- Enable note links
     self:EnableNoteLinks()
-	
+
 	playerName = _G.GetUnitName("player", true)
 end
 
@@ -1573,7 +1574,7 @@ function CharacterNotes:OnDisable()
 		self:UnregisterEvent("RAID_ROSTER_UPDATE")
    		self:UnregisterEvent("PARTY_MEMBERS_CHANGED")
 	end
-	
+
 	-- Remove the menu items
 	self:RemoveFromUnitPopupMenu()
 end
@@ -1604,12 +1605,12 @@ function CharacterNotes:SetHyperlink(frame, link, ...)
 end
 
 function CharacterNotes:AddToUnitPopupMenu()
-	_G.UnitPopupButtons["CN_EDIT_NOTE"] = {text = L["Edit Note"], dist = 0}
+	_G.UnitPopupButtons["CN_EDIT_NOTE"] = { text = L["Edit Note"] }
 
 	for menu, enabled in pairs(self.db.profile.menusToModify) do
 		if menu and enabled then
-			tinsert(_G.UnitPopupMenus[menu], 
-				#_G.UnitPopupMenus[menu], 
+			tinsert(_G.UnitPopupMenus[menu],
+				#_G.UnitPopupMenus[menu],
 				"CN_EDIT_NOTE")
 		end
 	end
@@ -1669,8 +1670,8 @@ function CharacterNotes:BuildTableData()
 	local key, value = nil, nil
 	for key, value in pairs(self.db.realm.notes) do
 		tinsert(notesData, {
-		    [RATING_COL] = (NotesDB:GetRating(key) or 0), 
-		    [NAME_COL] = key, 
+		    [RATING_COL] = (NotesDB:GetRating(key) or 0),
+		    [NAME_COL] = key,
 		    [NOTE_COL] = value})
 	end
 end
@@ -1698,7 +1699,7 @@ function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
         	        GetRatingColor(rating), nameFound, note))
         	else
         	    tooltip:AddLine(
-        	        tooltipNoteFormat:format(GetRatingColor(rating), note), 
+        	        tooltipNoteFormat:format(GetRatingColor(rating), note),
         	            1, 1, 1, not self.db.profile.wrapTooltip)
     	    end
         end
@@ -1709,7 +1710,7 @@ function CharacterNotes:GetFriendNote(friendName)
     local numFriends = _G.GetNumFriends()
     if numFriends > 0 then
         for i = 1, numFriends do
-            local name, level, class, area, connected, status, note = 
+            local name, level, class, area, connected, status, note =
 				_G.GetFriendInfo(i)
             if friendName == name then
                 return note
@@ -1723,12 +1724,12 @@ end
 function CharacterNotes:DisplayNote(name, type)
     local main
     name = NotesDB:FormatUnitName(name)
-    
+
     local note, rating, main, nameFound = NotesDB:GetInfoForNameOrMain(name)
 	if note then
 	    if main and #main > 0 then
 		    self:Print(chatNoteWithMainFormat:format(
-		        GetRatingColor(rating), name, nameFound, note))	        
+		        GetRatingColor(rating), name, nameFound, note))
         else
 		    self:Print(chatNoteFormat:format(
 		        GetRatingColor(rating), nameFound, note))
@@ -1770,7 +1771,7 @@ local function AddNoteForChat(message, name)
             return messageFmt:format(message, CharacterNotes:CreateNoteLink(nameFound,"note"))
         end
     end
-    
+
     return message
 end
 
@@ -1792,7 +1793,7 @@ function CharacterNotes:CHAT_MSG_SYSTEM(event, message)
 	    type = "WHO"
     end
 
-	if not name and self.db.profile.showNotesOnWho == true then 
+	if not name and self.db.profile.showNotesOnWho == true then
 	    name = LibDeformat(message, _G.WHO_LIST_GUILD_FORMAT)
 	    type = "WHO"
 	end
