@@ -26,7 +26,8 @@ externals:
         url: git://git.wowace.com/wow/libdeformat-3-0/mainline.git
 
     Libs/lib-st: 
-        url: svn://svn.wowace.com/wow/lib-st/mainline/trunk
+        url: https://github.com/ddumont/lib-st.git
+        tag: latest
 
     Libs/LibDataBroker-1.1:
         url: git://git.wowace.com/wow/libdatabroker-1-1/mainline.git
