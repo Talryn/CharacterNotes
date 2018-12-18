@@ -27,7 +27,6 @@ externals:
 
     Libs/lib-st: 
         url: https://github.com/ddumont/lib-st.git
-        tag: latest
 
     Libs/LibDataBroker-1.1:
         url: git://git.wowace.com/wow/libdatabroker-1-1/mainline.git
