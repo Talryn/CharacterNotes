@@ -8,7 +8,7 @@
 ## X-Category: Interface Enhancements 
 ## SavedVariables: CharacterNotesDB
 ## X-Curse-Project-ID: 24993
-## X-WOWI-ID: 17406
+## X-WoWI-ID: 17406
 
 embeds.xml
 
