@@ -25,12 +25,12 @@ Additional Features:
 
 Command-line options:
 
-    * /notes - Brings up the GUI
-    * /searchnote <search term> - Brings up the GUI. Optional search term allows filtering the list of notes.
-    * /setnote <name> <note> Sets a note for the character name specified.
-    * /delnote <name> Deletes the note for the character name specified.
-    * /getnote <name> Prints the note for the character name specified.
-    * /editnote <name> Brings up a window to edit the note for the name specified or your target if no name if specified. 
+    /notes - Brings up the GUI
+    /searchnote <search term> - Brings up the GUI. Optional search term allows filtering the list of notes.
+    /setnote <name> <note> Sets a note for the character name specified.
+    /delnote <name> Deletes the note for the character name specified.
+    /getnote <name> Prints the note for the character name specified.
+    /editnote <name> Brings up a window to edit the note for the name specified or your target if no name if specified. 
 
 Character Notes can use LibAlts to get main-alt information. If no note is found for a character but one is found for the main of that character, it will display the note for the main.
 
