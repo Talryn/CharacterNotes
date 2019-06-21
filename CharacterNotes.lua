@@ -1519,13 +1519,9 @@ function CharacterNotes:OnEnable()
 	-- Register to receive the chat messages to watch for logons and who requests
 	self:RegisterEvent("CHAT_MSG_SYSTEM")
 
-    -- Register for party and raid roster updates
-	if CURRENT_UI_VERSION >= 50000 then
-   		self:RegisterEvent("GROUP_ROSTER_UPDATE")
-	else
-		self:RegisterEvent("RAID_ROSTER_UPDATE")
-   		self:RegisterEvent("PARTY_MEMBERS_CHANGED")
-	end
+  -- Register for party and raid roster updates
+  self:RegisterEvent("GROUP_ROSTER_UPDATE")
+
 	-- Create the Notes frame for later use
 	notesFrame = self:CreateNotesFrame()
 
@@ -1538,8 +1534,8 @@ function CharacterNotes:OnEnable()
 	-- Add the Edit Note menu item on unit frames
 	self:AddToUnitPopupMenu()
 
-    -- Enable note links
-    self:EnableNoteLinks()
+  -- Enable note links
+  self:EnableNoteLinks()
 
 	playerName = _G.GetUnitName("player", true)
 end
@@ -1562,17 +1558,17 @@ end
 function CharacterNotes:DisableNoteLinks()
 	self:Unhook(nil, "SetItemRef")
 	self:Unhook(_G.ItemRefTooltip, "SetHyperlink")
-    self:UnhookChatFrames()
+  self:UnhookChatFrames()
 end
 
 function CharacterNotes:OnDisable()
     -- Called when the addon is disabled
 	self:UnregisterEvent("CHAT_MSG_SYSTEM")
 	if CURRENT_UI_VERSION >= 50000 then
-   		self:UnregisterEvent("GROUP_ROSTER_UPDATE")
+   	self:UnregisterEvent("GROUP_ROSTER_UPDATE")
 	else
 		self:UnregisterEvent("RAID_ROSTER_UPDATE")
-   		self:UnregisterEvent("PARTY_MEMBERS_CHANGED")
+   	self:UnregisterEvent("PARTY_MEMBERS_CHANGED")
 	end
 
 	-- Remove the menu items
@@ -1600,8 +1596,8 @@ function CharacterNotes:SetItemRef(link, text, button, ...)
 end
 
 function CharacterNotes:SetHyperlink(frame, link, ...)
-    if link and link:match("^charnote:") then return end
-    return self.hooks[frame].SetHyperlink(frame, link, ...)
+  if link and link:match("^charnote:") then return end
+  return self.hooks[frame].SetHyperlink(frame, link, ...)
 end
 
 function CharacterNotes:AddToUnitPopupMenu()
@@ -1637,7 +1633,7 @@ function CharacterNotes:UnitPopup_ShowMenu(dropdownMenu, which, unit, name, user
 	for i = 1, _G.UIDROPDOWNMENU_MAXBUTTONS do
 		local button = _G["DropDownList".._G.UIDROPDOWNMENU_MENU_LEVEL.."Button"..i]
 		if button.value == "CN_EDIT_NOTE" then
-		    button.func = CharacterNotes.EditNoteMenuClick
+      button.func = CharacterNotes.EditNoteMenuClick
 		end
 	end
 end
@@ -1647,7 +1643,7 @@ function CharacterNotes:EditNoteMenuClick()
 	local fullname = NotesDB:FormatNameWithRealm(menu.name, menu.server)
     if CharacterNotes.db.profile.debug then
 		local strFormat = "Menu Click: %s - %s -> %s"
-        CharacterNotes:Print(strFormat:format(
+    CharacterNotes:Print(strFormat:format(
 			_G.tostring(menu.name), _G.tostring(menu.server),
 			_G.tostring(fullname)))
     end
@@ -1670,9 +1666,10 @@ function CharacterNotes:BuildTableData()
 	local key, value = nil, nil
 	for key, value in pairs(self.db.realm.notes) do
 		tinsert(notesData, {
-		    [RATING_COL] = (NotesDB:GetRating(key) or 0),
-		    [NAME_COL] = key,
-		    [NOTE_COL] = value})
+	     [RATING_COL] = (NotesDB:GetRating(key) or 0),
+	     [NAME_COL] = key,
+	     [NOTE_COL] = value
+     })
 	end
 end
 
@@ -1685,18 +1682,18 @@ function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
 
 	-- If the unit exists and is a player then check if there is a note for it.
     if _G.UnitExists(unitid) and _G.UnitIsPlayer(unitid) then
-		-- Get the unit's name including the realm name
-		name = _G.GetUnitName(unitid, true) or name
+		    -- Get the unit's name including the realm name
+		    name = _G.GetUnitName(unitid, true) or name
         note, rating, main, nameFound = NotesDB:GetInfoForNameOrMain(name)
 
         if note then
-			if self.db.profile.wrapTooltip == true then
-			    note = wrap(note,self.db.profile.wrapTooltipLength,"    ","", 4)
-			end
+    			if self.db.profile.wrapTooltip == true then
+    			    note = wrap(note,self.db.profile.wrapTooltipLength,"    ","", 4)
+    			end
 
-            if main and #main > 0 then
-        	    tooltip:AddLine(tooltipNoteWithMainFormat:format(
-        	        GetRatingColor(rating), nameFound, note))
+          if main and #main > 0 then
+      	    tooltip:AddLine(tooltipNoteWithMainFormat:format(
+      	        GetRatingColor(rating), nameFound, note))
         	else
         	    tooltip:AddLine(
         	        tooltipNoteFormat:format(GetRatingColor(rating), note),
@@ -1726,15 +1723,15 @@ function CharacterNotes:DisplayNote(name, type)
     name = NotesDB:FormatUnitName(name)
 
     local note, rating, main, nameFound = NotesDB:GetInfoForNameOrMain(name)
-	if note then
-	    if main and #main > 0 then
-		    self:Print(chatNoteWithMainFormat:format(
-		        GetRatingColor(rating), name, nameFound, note))
-        else
-		    self:Print(chatNoteFormat:format(
-		        GetRatingColor(rating), nameFound, note))
-		end
-	end
+  	if note then
+  	    if main and #main > 0 then
+  		    self:Print(chatNoteWithMainFormat:format(
+  		        GetRatingColor(rating), name, nameFound, note))
+          else
+  		    self:Print(chatNoteFormat:format(
+  		        GetRatingColor(rating), nameFound, note))
+  		end
+  	end
 end
 
 function CharacterNotes:HookChatFrames()
