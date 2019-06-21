@@ -1564,12 +1564,7 @@ end
 function CharacterNotes:OnDisable()
     -- Called when the addon is disabled
 	self:UnregisterEvent("CHAT_MSG_SYSTEM")
-	if CURRENT_UI_VERSION >= 50000 then
-   	self:UnregisterEvent("GROUP_ROSTER_UPDATE")
-	else
-		self:UnregisterEvent("RAID_ROSTER_UPDATE")
-   	self:UnregisterEvent("PARTY_MEMBERS_CHANGED")
-	end
+ 	self:UnregisterEvent("GROUP_ROSTER_UPDATE")
 
 	-- Remove the menu items
 	self:RemoveFromUnitPopupMenu()
@@ -1805,26 +1800,13 @@ function CharacterNotes:CHAT_MSG_SYSTEM(event, message)
 	end
 end
 
-local function GetGroupTypeAndNumber()
-	local numRaid = _G.GetNumRaidMembers()
-	if numRaid > 0 then
-		return "raid", numRaid
-	else
-		return "party", _G.GetNumPartyMembers()
-	end
-end
-
 function CharacterNotes:ProcessGroupRosterUpdate()
 	local groupType = "party"
 	local numMembers = 0
 
-	if CURRENT_UI_VERSION >= 50000 then
-		numMembers = _G.GetNumGroupMembers()
-		if _G.IsInRaid() then
-			groupType = "raid"
-		end
-	else
-		groupType, numMembers = GetGroupTypeAndNumber()
+	numMembers = _G.GetNumGroupMembers()
+	if _G.IsInRaid() then
+		groupType = "raid"
 	end
 
 	if groupType == "raid" then
