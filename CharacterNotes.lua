@@ -1699,11 +1699,11 @@ function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
 end
 
 function CharacterNotes:GetFriendNote(friendName)
-    local numFriends = _G.GetNumFriends()
+    local numFriends = C_FriendList.GetNumFriends()
     if numFriends > 0 then
         for i = 1, numFriends do
             local name, level, class, area, connected, status, note =
-				_G.GetFriendInfo(i)
+				C_FriendList.GetFriendInfoByIndex(i)
             if friendName == name then
                 return note
             end

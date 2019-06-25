@@ -1,4 +1,4 @@
-## Interface: 80100
+## Interface: 80200
 ## Title: Character Notes
 ## Notes: Set and manage character notes that are displayed in unit tooltips and /who results.
 ## Author: Talryn
