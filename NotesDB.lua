@@ -32,6 +32,7 @@ local realmNames = {
     ["Blade'sedge"] = "Blade'sEdge",
     ["Bleedinghollow"] = "BleedingHollow",
     ["Bloodfurnace"] = "BloodFurnace",
+    ["Bloodsailbuccaneers"] = "BloodsailBuccaneers",
     ["Boreantundra"] = "BoreanTundra",
     ["Burningblade"] = "BurningBlade",
     ["Burninglegion"] = "BurningLegion",
@@ -236,7 +237,7 @@ function NotesDB:GetInfoForNameOrMain(name)
     local note, nameFound = self:GetNote(name)
     local rating = self:GetRating(nameFound)
     local main = nil
-    -- If there is no note then check if this character has a main 
+    -- If there is no note then check if this character has a main
     -- and if so if there is a note for that character.
     if not note then
         if self.db.profile.useLibAlts == true and LibAlts and LibAlts.GetMain then
@@ -255,7 +256,7 @@ function NotesDB:GetInfoForNameOrMain(name)
             end
         end
     end
-    
+
     return note, rating, main, nameFound
 end
 
