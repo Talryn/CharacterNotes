@@ -77,6 +77,7 @@ local defaults = {
 		exportUseNote = true,
 		exportUseRating = true,
 		exportEscape = true,
+    multilineNotes = false,
 		menusToModify = {
 			["PLAYER"] = true,
 			["PARTY"] = true,
@@ -212,6 +213,15 @@ function CharacterNotes:GetOptions()
                             get = function(info) return self.db.profile.verbose end,
                 			order = 40
                         },
+                      multilineNotes = {
+                            name = L["Multiline Notes"],
+                            desc = L["MultilineNotes_OptionDesc"],
+                            type = "toggle",
+                            set = function(info, val) self.db.profile.multilineNotes = val end,
+                            get = function(info) return self.db.profile.multilineNotes end,
+                			order = 50
+                        },
+
                         headerNoteDisplay = {
                 			order = 100,
                 			type = "header",
@@ -1362,13 +1372,17 @@ function CharacterNotes:CreateEditNoteFrame()
 	editbox:SetHeight(5*14)
 	editbox:SetMaxLetters(0)
 	editbox:SetScript("OnShow", function(this) editbox:SetFocus() end)
-	editbox:SetScript("OnEnterPressed",
+
+  if not self.db.profile.multilineNotes then
+	   editbox:SetScript("OnEnterPressed",
 	    function(this)
 	        local frame = this:GetParent():GetParent()
 	        local rating = _G.UIDropDownMenu_GetSelectedValue(editwindow.ratingDropdown)
 	        self:SaveEditNote(frame.charname:GetText(),frame.editbox:GetText(),rating)
 	        frame:Hide()
 	    end)
+  end
+
 	editbox:SetScript("OnEscapePressed",
 	    function(this)
 	        this:SetText("")
