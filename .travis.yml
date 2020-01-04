@@ -15,6 +15,7 @@ script: /home/travis/.luarocks/bin/luacheck . --no-color -quiet -only "011"
 
 after_script:
   - curl -s https://raw.githubusercontent.com/BigWigsMods/packager/master/release.sh | bash
+  - curl -s https://raw.githubusercontent.com/BigWigsMods/packager/master/release.sh | bash -s -- -g 1.13.3 -w 0
 
 notifications:
   email:
