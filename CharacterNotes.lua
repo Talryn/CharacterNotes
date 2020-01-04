@@ -61,7 +61,7 @@ local defaults = {
 		showNotesInTooltips = true,
 		noteLinksInChat = true,
 		useLibAlts = true,
-		addToMenu = false,
+		addMenuItems = false,
 		wrapTooltip = true,
 		wrapTooltipLength = 50,
 		notesForRaidMembers = false,
@@ -222,12 +222,12 @@ function CharacterNotes:GetOptions()
                             get = function(info) return self.db.profile.multilineNotes end,
                 			order = 50
                         },
-                	    addToMenu = {
-                            name = L["Add to Menu"],
-                            desc = L["AddToMenu_OptionDesc"],
+                	    addMenuItems = {
+                            name = L["Add Menu Items"],
+                            desc = L["AddMenuItems_OptionDesc"],
                             type = "toggle",
-                            set = function(info, val) self.db.profile.addToMenu = val end,
-                            get = function(info) return self.db.profile.addToMenu end,
+                            set = function(info, val) self.db.profile.addMenuItems = val end,
+                            get = function(info) return self.db.profile.addMenuItems end,
                 			order = 60
                         },
 
@@ -1555,7 +1555,7 @@ function CharacterNotes:OnEnable()
 	confirmDeleteFrame = self:CreateConfirmDeleteFrame()
 
 	-- Add the Edit Note menu item on unit frames
-	if self.db.profile.addToMenu then
+	if self.db.profile.addMenuItems then
 		self:AddToUnitPopupMenu()
 	end
 
