@@ -2,7 +2,7 @@
 ## Interface: 80205
 #@end-retail@
 #@non-retail@
-## Interface: 11303
+# ## Interface: 11303
 #@end-non-retail@
 ## Title: Character Notes
 ## Notes: Set and manage character notes that are displayed in unit tooltips and /who results.
