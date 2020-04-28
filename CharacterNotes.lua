@@ -576,6 +576,16 @@ end
 function CharacterNotes:SetNoteHandler(input)
 	if input and #input > 0 then
 		local name, note = input:match("^(%S+) *(.*)")
+
+		if name and name:upper() == "%T" then
+			if _G.UnitExists("target") and _G.UnitIsPlayer("target") then
+				local target = _G.GetUnitName("target", true)
+				if target and #target > 0 then
+					name = target
+				end
+			end
+		end
+
 		name = NotesDB:FormatUnitName(name)
 		if note and #note > 0 then
 			NotesDB:SetNote(name, note)
