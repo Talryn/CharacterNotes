@@ -955,7 +955,7 @@ function CharacterNotes:ShowNotesExportFrame()
 end
 
 function CharacterNotes:CreateNotesFrame()
-	local noteswindow = _G.CreateFrame("Frame", "CharacterNotesWindow", _G.UIParent)
+	local noteswindow = _G.CreateFrame("Frame", "CharacterNotesWindow", _G.UIParent, BackdropTemplateMixin and "BackdropTemplate")
 	noteswindow:SetFrameStrata("DIALOG")
 	noteswindow:SetToplevel(true)
 	noteswindow:SetWidth(630)
@@ -1237,7 +1237,7 @@ function CharacterNotes:NotesDBCheckHandler(input)
 end
 
 function CharacterNotes:CreateConfirmDeleteFrame()
-	local deletewindow = _G.CreateFrame("Frame", "CharacterNotesConfirmDeleteWindow", _G.UIParent)
+	local deletewindow = _G.CreateFrame("Frame", "CharacterNotesConfirmDeleteWindow", _G.UIParent, BackdropTemplateMixin and "BackdropTemplate")
 	deletewindow:SetFrameStrata("DIALOG")
 	deletewindow:SetToplevel(true)
 	deletewindow:SetWidth(400)
@@ -1300,7 +1300,7 @@ function CharacterNotes:CreateConfirmDeleteFrame()
 end
 
 function CharacterNotes:CreateEditNoteFrame()
-	local editwindow = _G.CreateFrame("Frame", "CharacterNotesEditWindow", _G.UIParent)
+	local editwindow = _G.CreateFrame("Frame", "CharacterNotesEditWindow", _G.UIParent, BackdropTemplateMixin and "BackdropTemplate")
 	editwindow:SetFrameStrata("DIALOG")
 	editwindow:SetToplevel(true)
 	editwindow:SetWidth(400)
@@ -1370,7 +1370,7 @@ function CharacterNotes:CreateEditNoteFrame()
     _G.UIDropDownMenu_SetSelectedValue(ratingDropdown, 0)
     _G.UIDropDownMenu_JustifyText(ratingDropdown, "LEFT")
 
-    local editBoxContainer = _G.CreateFrame("Frame", nil, editwindow)
+    local editBoxContainer = _G.CreateFrame("Frame", nil, editwindow, BackdropTemplateMixin and "BackdropTemplate")
     editBoxContainer:SetPoint("TOPLEFT", editwindow, "TOPLEFT", 20, -150)
     editBoxContainer:SetPoint("BOTTOMRIGHT", editwindow, "BOTTOMRIGHT", -40, 50)
 	editBoxContainer:SetBackdrop(
