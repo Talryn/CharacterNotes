@@ -640,8 +640,6 @@ function CharacterNotes:SetRatingHandler(input)
 			name = NotesDB:FormatUnitName(name)
 			NotesDB:SetRating(name, tonumber(rating))
 			if self.db.profile.verbose == true then
-				-- TODO: Figure out why the next line throws the following error:
-				--       AceLocale-3.0: CharacterNotes: Missing entry for 'Set rating for %s: %d'
 				local strFormat = L["Set rating for %s: %d"]
 				self:Print(strFormat:format(name, tonumber(rating)))
 			end
