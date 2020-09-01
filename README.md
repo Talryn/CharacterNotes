@@ -31,6 +31,7 @@ Command-line options:
     /delnote <name> Deletes the note for the character name specified.
     /getnote <name> Prints the note for the character name specified.
     /editnote <name> Brings up a window to edit the note for the name specified or your target if no name if specified. 
+    /setrating <name> <rating> Sets the rating for a note. (Rating: -1 = Negative, 0 = Neutral, 1 = Positive)
 
 Character Notes can use LibAlts to get main-alt information. If no note is found for a character but one is found for the main of that character, it will display the note for the main.
 

@@ -457,6 +457,7 @@ function CharacterNotes:OnInitialize()
 
 	self:RegisterChatCommand("setnote", "SetNoteHandler")
 	self:RegisterChatCommand("delnote", "DelNoteHandler")
+	self:RegisterChatCommand("setrating", "SetRatingHandler")
 	self:RegisterChatCommand("delrating", "DelRatingHandler")
 	self:RegisterChatCommand("getnote", "GetNoteHandler")
 	self:RegisterChatCommand("editnote", "EditNoteHandler")
@@ -618,6 +619,32 @@ function CharacterNotes:DelNoteHandler(input)
 		if self.db.profile.verbose == true then
 			local strFormat = L["Deleted note for %s"]
 			self:Print(strFormat:format(name))
+		end
+	end
+end
+
+function CharacterNotes:SetRatingHandler(input)
+	if input and #input > 0 then
+		local name, rating = input:match("^(%S+) *(.*)")
+
+		if name and name:upper() == "%T" then
+			if _G.UnitExists("target") and _G.UnitIsPlayer("target") then
+				local target = _G.GetUnitName("target", true)
+				if target and #target > 0 then
+					name = target
+				end
+			end
+		end
+
+		if name and #name and rating and #rating > 0 then
+			name = NotesDB:FormatUnitName(name)
+			NotesDB:SetRating(name, tonumber(rating))
+			if self.db.profile.verbose == true then
+				local strFormat = L["Set rating for %s: %d"]
+				self:Print(strFormat:format(name, tonumber(rating)))
+			end
+		else
+			self:Print(L["You must supply a rating (-1, 0, 1)."])
 		end
 	end
 end
