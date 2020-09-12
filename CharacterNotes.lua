@@ -158,13 +158,13 @@ function CharacterNotes:GetOptions()
             args = {
                 core = {
                     order = 1,
-                    name = "General Options",
+                    name = L["General Options"],
                     type = "group",
                     args = {
                 		headerGeneralOptions = {
                 			order = 0,
                 			type = "header",
-                			name = "General Options",
+                			name = L["General Options"],
                 		},
                 	    minimap = {
                             name = L["Minimap Button"],
@@ -912,7 +912,7 @@ function CharacterNotes:ShowNotesExportFrame()
     frame.multiline = multiline
 
     local fieldsHeading =  AGU:Create("Heading")
-    fieldsHeading:SetText("Fields to Export")
+    fieldsHeading:SetText(L["Fields to Export"])
     fieldsHeading:SetFullWidth(true)
     frame:AddChild(fieldsHeading)
 
@@ -947,7 +947,7 @@ function CharacterNotes:ShowNotesExportFrame()
     frame:AddChild(ratingOption)
 
     local optionsHeading = AGU:Create("Heading")
-    optionsHeading:SetText("Options")
+    optionsHeading:SetText(L["Options"])
     optionsHeading:SetFullWidth(true)
     frame:AddChild(optionsHeading)
 
