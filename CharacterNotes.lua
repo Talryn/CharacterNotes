@@ -1017,12 +1017,17 @@ function CharacterNotes:CreateNotesFrame()
 		["sortnext"] = NAME_COL,
 	  	["DoCellUpdate"] = function(rowFrame, cellFrame, data, cols, row, realrow, column, fShow, self, ...)
 	  	    if fShow then
+						if not cellFrame.rating then
+							cellFrame.rating = cellFrame:CreateTexture(nil, "BACKGROUND")
+							cellFrame.rating:SetAllPoints()
+						end
+
 		        local image = GetRatingImage(data[realrow][RATING_COL])
 		        if image and #image > 0 then
-		            cellFrame:SetBackdrop( { bgFile = image } )
+							cellFrame.rating:SetTexture(image)
 		        else
-		            cellFrame:SetBackdrop(nil)
-	            end
+							cellFrame.rating:SetTexture(nil)							
+						end
 		    end
 	  	end,
     }
