@@ -1,5 +1,5 @@
 #@retail@
-## Interface: 90001
+## Interface: 90002
 #@end-retail@
 #@non-retail@
 # ## Interface: 11305
@@ -10,7 +10,7 @@
 ## Version: @project-version@
 ## OptionalDeps: Ace3, LibDeformat-3.0, lib-st, LibDataBroker-1.1, LibDBIcon-1.0, LibAlts-1.0
 ## X-Embeds: Ace3
-## X-Category: Interface Enhancements 
+## X-Category: Interface Enhancements
 ## SavedVariables: CharacterNotesDB
 ## X-Curse-Project-ID: 24993
 ## X-WoWI-ID: 17406
