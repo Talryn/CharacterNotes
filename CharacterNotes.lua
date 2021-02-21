@@ -2002,3 +2002,28 @@ function wrap(str, limit, indent, indent1,offset)
 							end
 						end)
 end
+
+function CharacterNotes.LFGListUtil_SetSearchEntryTooltip(tooltip, resultID, autoAcceptOption)
+	local searchResultInfo = C_LFGList.GetSearchResultInfo(resultID);
+
+	note, rating, main, nameFound = NotesDB:GetInfoForNameOrMain(searchResultInfo.leaderName)
+
+	if note then
+		GameTooltip:AddLine(" ")
+
+		if CharacterNotes.db.profile.wrapTooltip == true then
+			note = wrap(note,CharacterNotes.db.profile.wrapTooltipLength,"    ","", 4)
+		end
+
+		if main and #main > 0 then
+			GameTooltip:AddLine(tooltipNoteWithMainFormat:format(GetRatingColor(rating)))
+		else
+			GameTooltip:AddLine(tooltipNoteFormat:format(GetRatingColor(rating), note))
+		end
+
+		GameTooltip:Show()
+	end
+end
+
+hooksecurefunc("LFGListUtil_SetSearchEntryTooltip", CharacterNotes.LFGListUtil_SetSearchEntryTooltip)
+
