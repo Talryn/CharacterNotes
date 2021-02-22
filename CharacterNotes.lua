@@ -2002,3 +2002,38 @@ function wrap(str, limit, indent, indent1,offset)
 							end
 						end)
 end
+
+function CharacterNotes.EasyMenu_Initialize(frame, level, menuList)
+	if CharacterNotes.db.profile.addMenuItems then
+		local isLFGAdded = false
+
+		if getn(menuList) > 3 and menuList[3].text == LFG_LIST_REPORT_GROUP_FOR then
+			local leaderName = menuList[2].arg1
+
+			for k, v in pairs(menuList) do
+				if v.text == L["Edit Note"] then
+					isLFGAdded = true
+					return
+				end
+			end
+
+			if not isLFGAdded then
+				UIDropDownMenu_AddButton({
+					text = L["Edit Note"],
+					func = function(_, leaderName)
+						CharacterNotes:EditNoteHandler(leaderName)
+					end,
+					arg1 = leaderName,
+					notCheckable = true,
+					disabled = nil,
+					colorCode = GREEN,
+					}, 1)
+			end
+
+			return menuList
+		end
+	end
+end
+
+hooksecurefunc("EasyMenu_Initialize", CharacterNotes.EasyMenu_Initialize)
+
