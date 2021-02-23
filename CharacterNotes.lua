@@ -2053,8 +2053,6 @@ function CharacterNotes.EasyMenu_Initialize(frame, level, menuList)
 					colorCode = GREEN,
 					}, 1)
 			end
-
-			return menuList
 		end
 	end
 end
