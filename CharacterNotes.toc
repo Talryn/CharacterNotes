@@ -19,5 +19,9 @@ embeds.xml
 
 locale.xml
 
+Core.lua
+RealmData.lua
 NotesDB.lua
 CharacterNotes.lua
+Options.lua
+InterfaceMods.lua

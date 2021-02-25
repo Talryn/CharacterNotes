@@ -1,4 +1,6 @@
 local _G = getfenv(0)
+local ADDON_NAME, addon = ...
+addon.addonName = "CharacterNotes"
 
 local string = _G.string
 local table = _G.table
@@ -8,45 +10,48 @@ local ipairs = _G.ipairs
 local select = _G.select
 local LibStub = _G.LibStub
 
-local CharacterNotes = LibStub("AceAddon-3.0"):NewAddon("CharacterNotes", "AceConsole-3.0", "AceHook-3.0", "AceEvent-3.0", "AceTimer-3.0")
+local wrap = addon.wrap
+local Colors = addon.Colors
+local ColumnIds = addon.ColumnIds
+local ColorObjs = addon.ColorObjs
+local GetRatingColor = addon.GetRatingColor
+local GetRatingColorObj = addon.GetRatingColorObj
+local GetRatingImage = addon.GetRatingImage
 
-local ADDON_NAME, AddonData = ...
+local CharacterNotes = LibStub("AceAddon-3.0"):NewAddon(addon.addonName, "AceConsole-3.0", "AceHook-3.0", "AceEvent-3.0", "AceTimer-3.0")
+
 local ADDON_VERSION = "@project-version@"
 
-local NotesDB = AddonData.NotesDB
+local NotesDB = addon.NotesDB
 
-local CURRENT_BUILD, CURRENT_INTERNAL,
-    CURRENT_BUILD_DATE, CURRENT_UI_VERSION = GetBuildInfo()
+addon.CURRENT_BUILD, addon.CURRENT_INTERNAL,
+  addon.CURRENT_BUILD_DATE, addon.CURRENT_UI_VERSION = _G.GetBuildInfo()
+addon.Classic = addon.CURRENT_UI_VERSION < 20000
 
 -- Local versions for performance
 local tinsert, tremove, tconcat = table.insert, table.remove, table.concat
 local sub = string.sub
 local wipe = _G.wipe
 
-local L = LibStub("AceLocale-3.0"):GetLocale("CharacterNotes", true)
+local L = LibStub("AceLocale-3.0"):GetLocale(addon.addonName, true)
 local AGU = LibStub("AceGUI-3.0")
 local LibDeformat = LibStub("LibDeformat-3.0")
 local LDB = LibStub("LibDataBroker-1.1")
 local icon = LibStub("LibDBIcon-1.0")
 local LibAlts = LibStub("LibAlts-1.0")
 
-local GREEN =  "|cff00ff00"
-local YELLOW = "|cffffff00"
-local RED =    "|cffff0000"
-local BLUE =   "|cff0198e1"
-local ORANGE = "|cffff9933"
-local WHITE =  "|cffffffff"
+-- String formats
+addon.Formats = {
+  chatNote = "%s%s: "..Colors.White.."%s".."|r",
+  chatNoteWithMain = "%s%s (%s): "..Colors.White.."%s".."|r",
+  tooltipNote = "%s"..L["Note: "]..Colors.White.."%s".."|r",
+  tooltipNoteWithMain = "%s"..L["Note"].." (%s): "..Colors.White.."%s".."|r",
+  nameRating = "%s%s".."|r",
+  nameWithMainRating = "%s%s (%s)".."|r",
+}
+local Formats = addon.Formats
 
 local CharNoteTooltip = nil
-
--- Functions defined at the end of the file.
-local wrap
-
--- String formats
-local chatNoteFormat = "%s%s: "..WHITE.."%s".."|r"
-local chatNoteWithMainFormat = "%s%s (%s): "..WHITE.."%s".."|r"
-local tooltipNoteFormat = "%s"..L["Note: "]..WHITE.."%s".."|r"
-local tooltipNoteWithMainFormat = "%s"..L["Note"].." (%s): "..WHITE.."%s".."|r"
 
 local defaults = {
 	profile = {
@@ -87,6 +92,11 @@ local defaults = {
 			["RAID_PLAYER"] = true,
       ["CHAT_ROSTER"] = true,
 		},
+    uiModifications = {
+      ["LFGLeaderTooltip"] = true,
+      ["LFGApplicantTooltip"] = true,
+      ["LFGGroupMenuEditNote"] = true,
+    }
 	},
 	realm = {
 	    notes = {},
@@ -94,7 +104,6 @@ local defaults = {
 	}
 }
 
-local options
 local noteLDB = nil
 local notesFrame = nil
 local editNoteFrame = nil
@@ -103,333 +112,22 @@ local notesData = {}
 local previousGroup = {}
 local playerName = _G.GetUnitName("player", true)
 
-local RATING_COL = 1
-local NAME_COL = 2
-local NOTE_COL = 3
-
-local RED_COLOR    = {["r"] = 1, ["g"] = 0, ["b"] = 0, ["a"] = 1}
-local YELLOW_COLOR = {["r"] = 1, ["g"] = 1, ["b"] = 0, ["a"] = 1}
-local GREEN_COLOR  = {["r"] = 0, ["g"] = 1, ["b"] = 0, ["a"] = 1}
-
-local RATING_OPTIONS = {
-    [-1] = {"Negative", RED, RED_COLOR, "Interface\\RAIDFRAME\\ReadyCheck-NotReady.blp"},
-    [0] = {"Neutral", YELLOW, YELLOW_COLOR, ""},
-    [1] = {"Positive", GREEN, GREEN_COLOR, "Interface\\RAIDFRAME\\ReadyCheck-Ready.blp"},
-}
-
-local function GetRatingColor(rating)
-    local color = YELLOW
-    if rating ~= nil and rating >= -1 and rating <= 1 then
-        local ratingInfo = RATING_OPTIONS[rating]
-        if ratingInfo and ratingInfo[2] then
-            color = ratingInfo[2]
-        end
-    end
-    return color
-end
-
-local function GetRatingColorObj(rating)
-    local color = YELLOW_COLOR
-    if rating ~= nil and rating >= -1 and rating <= 1 then
-        local ratingInfo = RATING_OPTIONS[rating]
-        if ratingInfo and ratingInfo[3] then
-            color = ratingInfo[3]
-        end
-    end
-    return color
-end
-
-local function GetRatingImage(rating)
-    local image = ""
-    if rating ~= nil and rating >= -1 and rating <= 1 then
-        local ratingInfo = RATING_OPTIONS[rating]
-        if ratingInfo and ratingInfo[4] then
-            image = ratingInfo[4]
-        end
-    end
-    return image
-end
-
-function CharacterNotes:GetOptions()
-    if not options then
-        options = {
-            name = ADDON_NAME,
-            type = 'group',
-            args = {
-                core = {
-                    order = 1,
-                    name = L["General Options"],
-                    type = "group",
-                    args = {
-                		headerGeneralOptions = {
-                			order = 0,
-                			type = "header",
-                			name = L["General Options"],
-                		},
-                	    minimap = {
-                            name = L["Minimap Button"],
-                            desc = L["Toggle the minimap button"],
-                            type = "toggle",
-                            set = function(info,val)
-                                	-- Reverse the value since the stored value is to hide it
-                                    self.db.profile.minimap.hide = not val
-                                	if self.db.profile.minimap.hide then
-                                		icon:Hide("CharacterNotesLDB")
-                                	else
-                                		icon:Show("CharacterNotesLDB")
-                                	end
-                                  end,
-                            get = function(info)
-                        	        -- Reverse the value since the stored value is to hide it
-                                    return not self.db.profile.minimap.hide
-                                  end,
-                			order = 10
-                        },
-                	    useLibAlts = {
-                            name = L["Use LibAlts Data"],
-                            desc = L["Toggles the use of LibAlts data if present.  If present and no note is found for a character, the note for the main will be shown if found."],
-                            type = "toggle",
-                            set = function(info, val) self.db.profile.useLibAlts = val end,
-                            get = function(info) return self.db.profile.useLibAlts end,
-                			order = 20
-                        },
-                	    mouseoverHighlighting = {
-                            name = L["Mouseover Highlighting"],
-                            desc = L["Toggles mouseover highlighting for tables."],
-                            type = "toggle",
-                            set = function(info, val)
-                                    self.db.profile.mouseoverHighlighting = val
-                                    self:UpdateMouseoverHighlighting(val)
-                                end,
-                            get = function(info)
-                                    return self.db.profile.mouseoverHighlighting
-                                end,
-                			order = 30
-                        },
-                	    verbose = {
-                            name = L["Verbose"],
-                            desc = L["Toggles the display of informational messages"],
-                            type = "toggle",
-                            set = function(info, val) self.db.profile.verbose = val end,
-                            get = function(info) return self.db.profile.verbose end,
-                			order = 40
-                        },
-                      multilineNotes = {
-                            name = L["Multiline Notes"],
-                            desc = L["MultilineNotes_OptionDesc"],
-                            type = "toggle",
-                            set = function(info, val) self.db.profile.multilineNotes = val end,
-                            get = function(info) return self.db.profile.multilineNotes end,
-                			order = 50
-                        },
-                	    addMenuItems = {
-                            name = L["Add Menu Items"],
-                            desc = L["AddMenuItems_OptionDesc"],
-                            type = "toggle",
-                            set = function(info, val) self.db.profile.addMenuItems = val end,
-                            get = function(info) return self.db.profile.addMenuItems end,
-                			order = 60
-                        },
-
-                        headerNoteDisplay = {
-                			order = 100,
-                			type = "header",
-                			name = L["Note Display"],
-                        },
-                	    noteLinksInChat = {
-                            name = L["Note Links"],
-                            desc = L["NoteLinks_OptionDesc"],
-                            type = "toggle",
-                            set = function(info, val)
-                                    self.db.profile.noteLinksInChat = val
-                                    if val then
-                                        self:EnableNoteLinks()
-                                    else
-                                        self:DisableNoteLinks()
-                                    end
-                                end,
-                            get = function(info) return self.db.profile.noteLinksInChat end,
-                			order = 110
-                        },
-                	    showNotesOnWho = {
-                            name = L["Show notes with who results"],
-                            desc = L["Toggles showing notes for /who results in the chat window."],
-                            type = "toggle",
-                            set = function(info, val) self.db.profile.showNotesOnWho = val end,
-                            get = function(info) return self.db.profile.showNotesOnWho end,
-                			order = 120
-                        },
-                	    showNotesOnLogon = {
-                            name = L["Show notes at logon"],
-                            desc = L["Toggles showing notes when a friend or guild memeber logs on."],
-                            type = "toggle",
-                            set = function(info, val) self.db.profile.showNotesOnLogon = val end,
-                            get = function(info) return self.db.profile.showNotesOnLogon end,
-                			order = 130
-                        },
-                        headerNoteLinks = {
-                			order = 150,
-                			type = "header",
-                			name = L["Note Links"],
-                        },
-                        lock_note_tooltip = {
-                            name = L["Lock"],
-                            desc = L["LockNoteTooltip_OptionDesc"],
-                            type = "toggle",
-                            set = function(info,val)
-                                self.db.profile.lock_tooltip = val
-                            end,
-                            get = function(info) return self.db.profile.lock_tooltip end,
-                			order = 160
-                        },
-                        remember_tooltip_pos = {
-                            name = L["Remember Position"],
-                            desc = L["RememberPositionNoteTooltip_OptionDesc"],
-                            type = "toggle",
-                            set = function(info,val) self.db.profile.remember_tooltip_pos = val end,
-                            get = function(info) return self.db.profile.remember_tooltip_pos end,
-                			order = 170
-                        },
-                		headerTooltipOptions = {
-                			order = 200,
-                			type = "header",
-                			name = L["Tooltip Options"],
-                		},
-                	    showNotesInTooltips = {
-                            name = L["Show notes in tooltips"],
-                            desc = L["Toggles showing notes in unit tooltips."],
-                            type = "toggle",
-                            set = function(info, val) self.db.profile.showNotesInTooltips = val end,
-                            get = function(info) return self.db.profile.showNotesInTooltips end,
-                			order = 210
-                        },
-                        wrapTooltip = {
-                            name = L["Wrap Tooltips"],
-                            desc = L["Wrap notes in tooltips at the specified line length.  Subsequent lines are indented."],
-                            type = "toggle",
-                            set = function(info,val) self.db.profile.wrapTooltip = val end,
-                            get = function(info) return self.db.profile.wrapTooltip end,
-                			order = 220
-                        },
-                        wrapTooltipLength = {
-                            name = L["Tooltip Wrap Length"],
-                            desc = L["Maximum line length for a tooltip"],
-                            type = "range",
-                			min = 20,
-                			max = 80,
-                			step = 1,
-                            set = function(info,val) self.db.profile.wrapTooltipLength = val end,
-                            get = function(info) return self.db.profile.wrapTooltipLength end,
-                			order = 230
-                        },
-                		headerMainWindow = {
-                			order = 300,
-                			type = "header",
-                			name = L["Notes Window"],
-                		},
-                        lock_main_window = {
-                            name = L["Lock"],
-                            desc = L["Lock_OptionDesc"],
-                            type = "toggle",
-                            set = function(info,val)
-                                self.db.profile.lock_main_window = val
-                                notesFrame.lock = val
-                            end,
-                            get = function(info) return self.db.profile.lock_main_window end,
-                			order = 310
-                        },
-                        remember_main_pos = {
-                            name = L["Remember Position"],
-                            desc = L["RememberPosition_OptionDesc"],
-                            type = "toggle",
-                            set = function(info,val) self.db.profile.remember_main_pos = val end,
-                            get = function(info) return self.db.profile.remember_main_pos end,
-                			order = 320
-                        },
-                		headerPartyRaid = {
-                			order = 400,
-                			type = "header",
-                			name = L["Notes for Party and Raid Members"],
-                		},
-                        descNotesGroup = {
-                            order = 410,
-                            type = "description",
-                            name = L["These options control if notes are displayed in the chat window for any members who have a note.  Notes are shown when joining a raid or a new member joins."]
-                        },
-                        notesForPartyMembers = {
-                            name = L["Party Members"],
-                            desc = L["Toggles displaying notes for party members."],
-                            type = "toggle",
-                            set = function(info,val) self.db.profile.notesForPartyMembers = val end,
-                            get = function(info) return self.db.profile.notesForPartyMembers end,
-                			order = 420
-                        },
-                        notesForRaidMembers = {
-                            name = L["Raid Members"],
-                            desc = L["Toggles displaying notes for raid members."],
-                            type = "toggle",
-                            set = function(info,val) self.db.profile.notesForRaidMembers = val end,
-                            get = function(info) return self.db.profile.notesForRaidMembers end,
-                			order = 430
-                        }
-                    }
-                },
-                export = {
-                    order = 2,
-                    name = L["Import/Export"],
-                    type = "group",
-                    args = {
-                		headerExport = {
-                			order = 100,
-                			type = "header",
-                			name = L["Export"],
-                		},
-                        guildExportButton = {
-                            name = L["Notes Export"],
-                            desc = L["NotesExport_OptionDesc"],
-                            type = "execute",
-                            width = "normal",
-                            func = function()
-                            	local optionsFrame = _G.InterfaceOptionsFrame
-                                optionsFrame:Hide()
-                                self:NotesExportHandler("")
-                            end,
-                			order = 110
-                        },
-                		headerImport = {
-                			order = 200,
-                			type = "header",
-                			name = L["Import"],
-                		},
-                        guildImportButton = {
-                            name = L["Notes Import"],
-                            desc = L["NotesImport_OptionDesc"],
-                            type = "execute",
-                            width = "normal",
-                            disabled = true,
-                            func = function()
-                            	local optionsFrame = _G.InterfaceOptionsFrame
-                                optionsFrame:Hide()
-                                self:NotesImportHandler("")
-                            end,
-                			order = 210
-                        },
-                    }
-                }
-            }
-        }
-    end
-
-    return options
-end
-
 function CharacterNotes:ShowOptions()
 	_G.InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Main)
+end
+
+function CharacterNotes:OnProfileChange()
+  addon.db = self.db
 end
 
 function CharacterNotes:OnInitialize()
     -- Called when the addon is loaded
     self.db = LibStub("AceDB-3.0"):New("CharacterNotesDB", defaults, "Default")
+
+  self.db.RegisterCallback(self, "OnProfileChanged", "OnProfileChange")
+  self.db.RegisterCallback(self, "OnProfileCopied", "OnProfileChange")
+  self.db.RegisterCallback(self, "OnProfileReset", "OnProfileChange")
+  addon.db = self.db
 
 	NotesDB:OnInitialize(self)
 
@@ -439,17 +137,17 @@ function CharacterNotes:OnInitialize()
 	-- Build the table data for the Notes window
 	self:BuildTableData()
 
-    -- Register the options table
-    --LibStub("AceConfig-3.0"):RegisterOptionsTable("CharacterNotes", self:GetOptions())
+  -- Register the options table
+  --LibStub("AceConfig-3.0"):RegisterOptionsTable("CharacterNotes", self:GetOptions())
 	--self.optionsFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(
 	--    "CharacterNotes", ADDON_NAME)
 
-    -- Register the options table
-    local displayName = _G.GetAddOnMetadata(ADDON_NAME, "Title")
-	local options = self:GetOptions()
-    LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable(displayName, options)
-    self.optionsFrame = {}
-    local ACD = LibStub("AceConfigDialog-3.0")
+  -- Register the options table
+  local displayName = _G.GetAddOnMetadata(ADDON_NAME, "Title")
+	self.options = self:GetOptions()
+  LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable(displayName, self.options)
+  self.optionsFrame = {}
+  local ACD = LibStub("AceConfigDialog-3.0")
 	self.optionsFrame.Main = ACD:AddToBlizOptions(
 	    displayName, displayName, nil, "core")
 	self.optionsFrame.Notes = ACD:AddToBlizOptions(
@@ -494,10 +192,10 @@ function CharacterNotes:OnInitialize()
 		end,
 		OnTooltipShow = function(tooltip)
 			if tooltip and tooltip.AddLine then
-				tooltip:AddLine(GREEN .. L["Character Notes"].." "..ADDON_VERSION)
-				tooltip:AddLine(YELLOW .. L["Left click"] .. " " .. WHITE
+				tooltip:AddLine(Colors.Green .. L["Character Notes"].." "..ADDON_VERSION)
+				tooltip:AddLine(Colors.Yellow .. L["Left click"] .. " " .. Colors.White
 					.. L["to open/close the window"])
-				tooltip:AddLine(YELLOW .. L["Right click"] .. " " .. WHITE
+				tooltip:AddLine(Colors.Yellow .. L["Right click"] .. " " .. Colors.White
 					.. L["to open/close the configuration."])
 			end
 		end
@@ -511,6 +209,8 @@ function CharacterNotes:OnInitialize()
 	-- Hook any new temporary windows
 	self:SecureHook("FCF_SetTemporaryWindowType")
 	self:SecureHook("FCF_Close")
+
+  self:EnableInterfaceModifications()
 end
 
 function CharacterNotes:CreateCharNoteTooltip()
@@ -675,17 +375,17 @@ end
 function CharacterNotes:UpdateNote(name, note)
 	local found = false
 	for i, v in ipairs(notesData) do
-		if v[NAME_COL] == name then
-			notesData[i][NOTE_COL] = note
+		if v[ColumnIds.Name] == name then
+			notesData[i][ColumnIds.Note] = note
 			found = true
 		end
 	end
 
 	if found == false then
 		tinsert(notesData, {
-		    [RATING_COL] = (NotesDB:GetRating(name) or 0),
-		    [NAME_COL] = name,
-		    [NOTE_COL] = note})
+		    [ColumnIds.Rating] = (NotesDB:GetRating(name) or 0),
+		    [ColumnIds.Name] = name,
+		    [ColumnIds.Note] = note})
 	end
 
 	-- If the Notes window is shown then we need to update it
@@ -697,17 +397,17 @@ end
 function CharacterNotes:UpdateRating(name, rating)
 	local found = false
 	for i, v in ipairs(notesData) do
-		if v[NAME_COL] == name then
-			notesData[i][RATING_COL] = rating
+		if v[ColumnIds.Name] == name then
+			notesData[i][ColumnIds.Rating] = rating
 			found = true
 		end
 	end
 
 	if found == false then
 		tinsert(notesData, {
-		    [RATING_COL] = rating,
-		    [NAME_COL] = name,
-		    [NOTE_COL] = NotesDB:GetNote(name)})
+		    [ColumnIds.Rating] = rating,
+		    [ColumnIds.Name] = name,
+		    [ColumnIds.Note] = NotesDB:GetNote(name)})
 	end
 
 	-- If the Notes window is shown then we need to update it
@@ -718,7 +418,7 @@ end
 
 function CharacterNotes:RemoveNote(name)
 	for i, v in ipairs(notesData) do
-		if v[NAME_COL] == name then
+		if v[ColumnIds.Name] == name then
 		    tremove(notesData, i)
 		end
 	end
@@ -731,11 +431,11 @@ end
 
 function CharacterNotes:RemoveRating(name)
 	for i, v in ipairs(notesData) do
-		if v[NAME_COL] == name then
-		    if v[NOTE_COL] == nil then
+		if v[ColumnIds.Name] == name then
+		    if v[ColumnIds.Note] == nil then
 			    tremove(notesData, i)
             else
-                v[RATING_COL] = 0
+                v[ColumnIds.Rating] = 0
             end
 		end
 	end
@@ -755,10 +455,10 @@ function CharacterNotes:GetNoteHandler(input)
 
 		if note then
 		    if main and #main > 0 then
-			    self:Print(chatNoteWithMainFormat:format(
+			    self:Print(Formats.chatNoteWithMain:format(
 			        GetRatingColor(rating), name, nameFound, note or ""))
 	        else
-			    self:Print(chatNoteFormat:format(
+			    self:Print(Formats.chatNote:format(
 			        GetRatingColor(rating), nameFound, note or ""))
 			end
 		else
@@ -999,12 +699,8 @@ function CharacterNotes:CreateNotesFrame()
 
 	local ScrollingTable = LibStub("ScrollingTable");
 
-    local RATING_COL = 1
-    local NAME_COL = 2
-    local NOTE_COL = 3
-
 	local cols = {}
-    cols[RATING_COL] = {
+    cols[ColumnIds.Rating] = {
 		["name"] = L["RATING_COLUMN_NAME"],
 		["width"] = 15,
 		["colorargs"] = nil,
@@ -1014,7 +710,7 @@ function CharacterNotes:CreateNotesFrame()
 			["b"] = 0.0,
 			["a"] = 1.0
 		},
-		["sortnext"] = NAME_COL,
+		["sortnext"] = ColumnIds.Name,
 	  	["DoCellUpdate"] = function(rowFrame, cellFrame, data, cols, row, realrow, column, fShow, self, ...)
 	  	    if fShow then
 						if not cellFrame.rating then
@@ -1022,21 +718,21 @@ function CharacterNotes:CreateNotesFrame()
 							cellFrame.rating:SetAllPoints()
 						end
 
-		        local image = GetRatingImage(data[realrow][RATING_COL])
+		        local image = GetRatingImage(data[realrow][ColumnIds.Rating])
 		        if image and #image > 0 then
 							cellFrame.rating:SetTexture(image)
 		        else
-							cellFrame.rating:SetTexture(nil)							
+							cellFrame.rating:SetTexture(nil)
 						end
 		    end
 	  	end,
     }
-	cols[NAME_COL] = {
+	cols[ColumnIds.Name] = {
 		["name"] = L["Character Name"],
 		["width"] = 150,
 		["align"] = "LEFT",
 		["color"] = function(data, cols, realrow, column, table)
-		    return GetRatingColorObj(data[realrow][RATING_COL])
+		    return GetRatingColorObj(data[realrow][ColumnIds.Rating])
 	    end,
 		["colorargs"] = nil,
 		["bgcolor"] = {
@@ -1049,7 +745,7 @@ function CharacterNotes:CreateNotesFrame()
 		["sort"] = "dsc",
 		["DoCellUpdate"] = nil,
 	}
-	cols[NOTE_COL] = {
+	cols[ColumnIds.Note] = {
 		["name"] = L["Note"],
 		["width"] = 400,
 		["align"] = "LEFT",
@@ -1066,7 +762,7 @@ function CharacterNotes:CreateNotesFrame()
 			["b"] = 0.0,
 			["a"] = 1.0
 		},
-		["sortnext"] = NAME_COL,
+		["sortnext"] = ColumnIds.Name,
 		["DoCellUpdate"] = nil,
 	}
 
@@ -1127,8 +823,8 @@ function CharacterNotes:CreateNotesFrame()
 		    local frame = this:GetParent()
 			if frame.table:GetSelection() then
 				local row = frame.table:GetRow(frame.table:GetSelection())
-				if row and row[NAME_COL] and #row[NAME_COL] > 0 then
-					confirmDeleteFrame.charname:SetText(row[NAME_COL])
+				if row and row[ColumnIds.Name] and #row[ColumnIds.Name] > 0 then
+					confirmDeleteFrame.charname:SetText(row[ColumnIds.Name])
 					confirmDeleteFrame:Show()
 					confirmDeleteFrame:Raise()
 				end
@@ -1145,8 +841,8 @@ function CharacterNotes:CreateNotesFrame()
 		    local frame = this:GetParent()
 			if frame.table:GetSelection() then
 				local row = frame.table:GetRow(frame.table:GetSelection())
-				if row and row[NAME_COL] and #row[NAME_COL] > 0 then
-					self:EditNoteHandler(row[NAME_COL])
+				if row and row[ColumnIds.Name] and #row[ColumnIds.Name] > 0 then
+					self:EditNoteHandler(row[ColumnIds.Name])
 				end
 			end
 		end)
@@ -1174,7 +870,7 @@ function CharacterNotes:CreateNotesFrame()
 			local searchterm = searchterm:GetText():lower()
 			if searchterm and #searchterm > 0 then
 				local term = searchterm:lower()
-				if row[NAME_COL]:lower():find(term) or row[NOTE_COL]:lower():find(term) then
+				if row[ColumnIds.Name]:lower():find(term) or row[ColumnIds.Note]:lower():find(term) then
 					return true
 				end
 
@@ -1387,10 +1083,10 @@ function CharacterNotes:CreateEditNoteFrame()
         local info = nil
         for i = -1, 1 do
             info = _G.UIDropDownMenu_CreateInfo()
-            local ratingInfo = RATING_OPTIONS[i]
-            info.text = ratingInfo[1]
+            local ratingInfo = addon.RatingOptions[i]
+            info.text = ratingInfo.title
             info.value = i
-            info.colorCode = ratingInfo[2]
+            info.colorCode = ratingInfo.color
             info.func = function(self)
                 _G.UIDropDownMenu_SetSelectedValue(ratingDropdown, self.value)
             end
@@ -1550,9 +1246,9 @@ function CharacterNotes:EditNoteHandler(input)
 		editwindow:Raise()
 
 		_G.UIDropDownMenu_SetSelectedValue(editwindow.ratingDropdown, rating)
-        local ratingInfo = RATING_OPTIONS[rating]
-        if ratingInfo and ratingInfo[1] and ratingInfo[2] then
-		    _G.UIDropDownMenu_SetText(editwindow.ratingDropdown, ratingInfo[2]..ratingInfo[1].."|r")
+        local ratingInfo = addon.RatingOptions[rating]
+        if ratingInfo and ratingInfo.title and ratingInfo.color then
+		    _G.UIDropDownMenu_SetText(editwindow.ratingDropdown, ratingInfo.color..ratingInfo.title.."|r")
         end
 	end
 end
@@ -1589,6 +1285,7 @@ function CharacterNotes:OnEnable()
 
 	-- Create the Notes frame for later use
 	notesFrame = self:CreateNotesFrame()
+  self.notesFrame = notesFrame
 
 	-- Create the Edit Note frame to use later
 	editNoteFrame = self:CreateEditNoteFrame()
@@ -1728,9 +1425,9 @@ function CharacterNotes:BuildTableData()
 	local key, value = nil, nil
 	for key, value in pairs(self.db.realm.notes) do
 		tinsert(notesData, {
-	     [RATING_COL] = (NotesDB:GetRating(key) or 0),
-	     [NAME_COL] = key,
-	     [NOTE_COL] = value
+	     [ColumnIds.Rating] = (NotesDB:GetRating(key) or 0),
+	     [ColumnIds.Name] = key,
+	     [ColumnIds.Note] = value
      })
 	end
 end
@@ -1754,11 +1451,11 @@ function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
     			end
 
           if main and #main > 0 then
-      	    tooltip:AddLine(tooltipNoteWithMainFormat:format(
+      	    tooltip:AddLine(Formats.tooltipNoteWithMain:format(
       	        GetRatingColor(rating), nameFound, note))
         	else
         	    tooltip:AddLine(
-        	        tooltipNoteFormat:format(GetRatingColor(rating), note),
+        	        Formats.tooltipNote:format(GetRatingColor(rating), note),
         	            1, 1, 1, not self.db.profile.wrapTooltip)
     	    end
         end
@@ -1787,10 +1484,10 @@ function CharacterNotes:DisplayNote(name, type)
     local note, rating, main, nameFound = NotesDB:GetInfoForNameOrMain(name)
   	if note then
   	    if main and #main > 0 then
-  		    self:Print(chatNoteWithMainFormat:format(
+  		    self:Print(Formats.chatNoteWithMain:format(
   		        GetRatingColor(rating), name, nameFound, note))
           else
-  		    self:Print(chatNoteFormat:format(
+  		    self:Print(Formats.chatNote:format(
   		        GetRatingColor(rating), nameFound, note))
   		end
   	end
@@ -1987,75 +1684,3 @@ end
 function CharacterNotes:GROUP_ROSTER_UPDATE(event, message)
 	self:ProcessGroupRosterUpdate()
 end
-
-function wrap(str, limit, indent, indent1,offset)
-	indent = indent or ""
-	indent1 = indent1 or indent
-	limit = limit or 72
-	offset = offset or 0
-	local here = 1-#indent1-offset
-	return indent1..str:gsub("(%s+)()(%S+)()",
-						function(sp, st, word, fi)
-							if fi-here > limit then
-								here = st - #indent
-								return "\n"..indent..word
-							end
-						end)
-end
-
-function CharacterNotes.LFGListUtil_SetSearchEntryTooltip(tooltip, resultID, autoAcceptOption)
-	local searchResultInfo = C_LFGList.GetSearchResultInfo(resultID);
-
-	note, rating, main, nameFound = NotesDB:GetInfoForNameOrMain(searchResultInfo.leaderName)
-
-	if note then
-		GameTooltip:AddLine(" ")
-
-		if CharacterNotes.db.profile.wrapTooltip == true then
-			note = wrap(note,CharacterNotes.db.profile.wrapTooltipLength,"    ","", 4)
-		end
-
-		if main and #main > 0 then
-			GameTooltip:AddLine(tooltipNoteWithMainFormat:format(GetRatingColor(rating)))
-		else
-			GameTooltip:AddLine(tooltipNoteFormat:format(GetRatingColor(rating), note))
-		end
-
-		GameTooltip:Show()
-	end
-end
-
-hooksecurefunc("LFGListUtil_SetSearchEntryTooltip", CharacterNotes.LFGListUtil_SetSearchEntryTooltip)
-
-function CharacterNotes.EasyMenu_Initialize(frame, level, menuList)
-	if CharacterNotes.db.profile.addMenuItems then
-		local isLFGAdded = false
-
-		if getn(menuList) > 3 and menuList[3].text == LFG_LIST_REPORT_GROUP_FOR then
-			local leaderName = menuList[2].arg1
-
-			for k, v in pairs(menuList) do
-				if v.text == L["Edit Note"] then
-					isLFGAdded = true
-					return
-				end
-			end
-
-			if not isLFGAdded then
-				UIDropDownMenu_AddButton({
-					text = L["Edit Note"],
-					func = function(_, leaderName)
-						CharacterNotes:EditNoteHandler(leaderName)
-					end,
-					arg1 = leaderName,
-					notCheckable = true,
-					disabled = nil,
-					colorCode = GREEN,
-					}, 1)
-			end
-		end
-	end
-end
-
-hooksecurefunc("EasyMenu_Initialize", CharacterNotes.EasyMenu_Initialize)
-
