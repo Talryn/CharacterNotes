@@ -237,31 +237,7 @@ function CharacterNotes:GetOptions()
             type = "description",
             name = L["InterfaceModifications_Desc"],
           },
-          lfgLeaderTooltip = {
-              name = L["LFG Leader Tooltip"],
-              desc = L["LFGLeaderTooltip_Opt"],
-              type = "toggle",
-              set = function(info,val) self.db.profile.uiModifications.LFGLeaderTooltip = val end,
-              get = function(info) return self.db.profile.uiModifications.LFGLeaderTooltip end,
-              order = 510
-          },
-          lfgApplicantTooltip = {
-              name = L["LFG Applicant Tooltip"],
-              desc = L["LFGApplicantTooltip_Opt"],
-              type = "toggle",
-              set = function(info,val) self.db.profile.uiModifications.LFGApplicantTooltip = val end,
-              get = function(info) return self.db.profile.uiModifications.LFGApplicantTooltip end,
-              order = 520
-          },
-          lfgGroupMenuEditNote = {
-              name = L["LFG Group Menu-Edit Note"],
-              desc = L["LFGGroupMenuEditNote_Opt"],
-              type = "toggle",
-              set = function(info,val) self.db.profile.uiModifications.LFGGroupMenuEditNote = val end,
-              get = function(info) return self.db.profile.uiModifications.LFGGroupMenuEditNote end,
-              order = 520
-          },
-          }
+        }
       },
       export = {
           order = 2,
@@ -307,6 +283,67 @@ function CharacterNotes:GetOptions()
         }
       }
     }
+  end
+
+  -- Add in the relevant interface modification options.
+  local intModOpts = self:InterfaceModsOptions()
+  for k, v in _G.pairs(intModOpts) do
+    options.args.core.args[k] = v
+  end
+
+  return options
+end
+
+function CharacterNotes:InterfaceModsOptions()
+  local baseOrder = 500
+
+  -- Options for all versions
+  local allOptions = {}
+
+  -- Options for current retail version.
+  local currentOptions = {
+    lfgLeaderTooltip = {
+        name = L["LFG Leader Tooltip"],
+        desc = L["LFGLeaderTooltip_Opt"],
+        type = "toggle",
+        set = function(info,val) self.db.profile.uiModifications.LFGLeaderTooltip = val end,
+        get = function(info) return self.db.profile.uiModifications.LFGLeaderTooltip end,
+        order = baseOrder + 10
+    },
+    lfgApplicantTooltip = {
+        name = L["LFG Applicant Tooltip"],
+        desc = L["LFGApplicantTooltip_Opt"],
+        type = "toggle",
+        set = function(info,val) self.db.profile.uiModifications.LFGApplicantTooltip = val end,
+        get = function(info) return self.db.profile.uiModifications.LFGApplicantTooltip end,
+        order = baseOrder + 20
+    },
+    lfgGroupMenuEditNote = {
+        name = L["LFG Group Menu-Edit Note"],
+        desc = L["LFGGroupMenuEditNote_Opt"],
+        type = "toggle",
+        set = function(info,val) self.db.profile.uiModifications.LFGGroupMenuEditNote = val end,
+        get = function(info) return self.db.profile.uiModifications.LFGGroupMenuEditNote end,
+        order = baseOrder + 30
+    },
+  }
+
+  -- Options for Classic only.
+  local classicOptions = {
+  }
+
+  local options = allOptions
+
+  if not addon.Classic then
+    for k, v in _G.pairs(currentOptions) do
+      options[k] = v
+    end
+  end
+
+  if addon.Classic then
+    for k, v in _G.pairs(classicOptions) do
+      options[k] = v
+    end
   end
 
   return options
