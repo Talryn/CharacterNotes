@@ -15,7 +15,7 @@ local CharacterNotes = _G.LibStub("AceAddon-3.0"):GetAddon(addon.addonName)
 local L = LibStub("AceLocale-3.0"):GetLocale(addon.addonName, true)
 
 function CharacterNotes:EnableInterfaceModifications()
-  if not addon.Classic then
+  if not addon.Classic and not addon.TBC then
     if self.db.profile.uiModifications["LFGLeaderTooltip"] then
       hooksecurefunc("LFGListUtil_SetSearchEntryTooltip",
         CharacterNotes.LFGListUtil_SetSearchEntryTooltip)
@@ -163,6 +163,9 @@ do
 	end
 
   local function IsEnabled()
+    if addon.Classic or addon.TBC then
+      return false
+    end
     return addon.db.profile.uiModifications.GuildRosterTooltip
   end
 
@@ -218,6 +221,9 @@ do
 	module.enabled = false
 
   local function IsEnabled()
+    if addon.Classic or addon.TBC then
+      return false
+    end
     return addon.db.profile.uiModifications.CommunitiesTooltip
   end
 

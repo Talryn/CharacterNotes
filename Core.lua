@@ -1,6 +1,11 @@
 local _G = getfenv(0)
 local ADDON_NAME, addon = ...
 
+addon.CURRENT_BUILD, addon.CURRENT_INTERNAL,
+  addon.CURRENT_BUILD_DATE, addon.CURRENT_UI_VERSION = _G.GetBuildInfo()
+addon.Classic = addon.CURRENT_UI_VERSION < 20000
+addon.TBC = not addon.Classic and addon.CURRENT_UI_VERSION < 30000
+
 addon.Colors = {
   Green =  "|cff00ff00",
   Yellow = "|cffffff00",

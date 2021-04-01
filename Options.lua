@@ -332,15 +332,19 @@ function CharacterNotes:InterfaceModsOptions()
   local classicOptions = {
   }
 
+  -- Options for TBC only.
+  local tbcOptions = {
+  }
+
   local options = allOptions
 
-  if not addon.Classic then
+  if not (addon.Classic or addon.TBC) then
     for k, v in _G.pairs(currentOptions) do
       options[k] = v
     end
   end
 
-  if addon.Classic then
+  if addon.Classic or addon.TBC then
     for k, v in _G.pairs(classicOptions) do
       options[k] = v
     end

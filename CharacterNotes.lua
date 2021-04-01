@@ -24,10 +24,6 @@ local ADDON_VERSION = "@project-version@"
 
 local NotesDB = addon.NotesDB
 
-addon.CURRENT_BUILD, addon.CURRENT_INTERNAL,
-  addon.CURRENT_BUILD_DATE, addon.CURRENT_UI_VERSION = _G.GetBuildInfo()
-addon.Classic = addon.CURRENT_UI_VERSION < 20000
-
 -- Local versions for performance
 local tinsert, tremove, tconcat = table.insert, table.remove, table.concat
 local sub = string.sub
