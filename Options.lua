@@ -290,7 +290,7 @@ function CharacterNotes:InterfaceModsOptions()
   -- Options for all versions
   local baseOrderAll = 500
   local allOptions = {
-    lfgLeaderTooltip = {
+    unitMenusEditNote = {
       name = L["Unit Menus-Edit Note"],
       desc = L["UnitMenusEdit_Opt"],
       type = "toggle",
@@ -303,7 +303,7 @@ function CharacterNotes:InterfaceModsOptions()
   -- Options for current retail version.
   local baseOrderCurrent = 600
   local currentOptions = {
-    unitMenusEdit = {
+    lfgLeaderTooltip = {
         name = L["LFG Leader Tooltip"],
         desc = L["LFGLeaderTooltip_Opt"],
         type = "toggle",

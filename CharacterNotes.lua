@@ -80,14 +80,6 @@ local defaults = {
 		exportUseRating = true,
 		exportEscape = true,
     	multilineNotes = false,
-		menusToModify = {
-			["PLAYER"] = true,
-			["PARTY"] = true,
-			["FRIEND"] = true,
-			["FRIEND_OFFLINE"] = true,
-			["RAID_PLAYER"] = true,
-      		["CHAT_ROSTER"] = true,
-		},
     	uiModifications = {
 			["unitMenusEdit"] = true,
 			["LFGLeaderTooltip"] = true,
