@@ -77,14 +77,6 @@ function CharacterNotes:GetOptions()
                   get = function(info) return self.db.profile.multilineNotes end,
       			order = 50
               },
-      	    addMenuItems = {
-                  name = L["Add Menu Items"],
-                  desc = L["AddMenuItems_OptionDesc"],
-                  type = "toggle",
-                  set = function(info, val) self.db.profile.addMenuItems = val end,
-                  get = function(info) return self.db.profile.addMenuItems end,
-      			order = 60
-              },
 
               headerNoteDisplay = {
       			order = 100,
@@ -295,20 +287,29 @@ function CharacterNotes:GetOptions()
 end
 
 function CharacterNotes:InterfaceModsOptions()
-  local baseOrder = 500
-
   -- Options for all versions
-  local allOptions = {}
+  local baseOrderAll = 500
+  local allOptions = {
+    lfgLeaderTooltip = {
+      name = L["Unit Menus-Edit Note"],
+      desc = L["UnitMenusEdit_Opt"],
+      type = "toggle",
+      set = function(info,val) self.db.profile.uiModifications.unitMenusEdit = val end,
+      get = function(info) return self.db.profile.uiModifications.unitMenusEdit end,
+      order = baseOrderAll + 10
+    },
+  }
 
   -- Options for current retail version.
+  local baseOrderCurrent = 600
   local currentOptions = {
-    lfgLeaderTooltip = {
+    unitMenusEdit = {
         name = L["LFG Leader Tooltip"],
         desc = L["LFGLeaderTooltip_Opt"],
         type = "toggle",
         set = function(info,val) self.db.profile.uiModifications.LFGLeaderTooltip = val end,
         get = function(info) return self.db.profile.uiModifications.LFGLeaderTooltip end,
-        order = baseOrder + 10
+        order = baseOrderCurrent + 10
     },
     lfgApplicantTooltip = {
         name = L["LFG Applicant Tooltip"],
@@ -316,7 +317,7 @@ function CharacterNotes:InterfaceModsOptions()
         type = "toggle",
         set = function(info,val) self.db.profile.uiModifications.LFGApplicantTooltip = val end,
         get = function(info) return self.db.profile.uiModifications.LFGApplicantTooltip end,
-        order = baseOrder + 20
+        order = baseOrderCurrent + 20
     },
     lfgGroupMenuEditNote = {
         name = L["LFG Group Menu-Edit Note"],
@@ -324,7 +325,7 @@ function CharacterNotes:InterfaceModsOptions()
         type = "toggle",
         set = function(info,val) self.db.profile.uiModifications.LFGGroupMenuEditNote = val end,
         get = function(info) return self.db.profile.uiModifications.LFGGroupMenuEditNote end,
-        order = baseOrder + 30
+        order = baseOrderCurrent + 30
     },
   }
 
@@ -338,13 +339,19 @@ function CharacterNotes:InterfaceModsOptions()
 
   local options = allOptions
 
-  if not (addon.Classic or addon.TBC) then
+  if addon.Retail then
     for k, v in _G.pairs(currentOptions) do
       options[k] = v
     end
   end
 
-  if addon.Classic or addon.TBC then
+  if addon.TBC then
+    for k, v in _G.pairs(tbcOptions) do
+      options[k] = v
+    end
+  end
+
+  if addon.Classic then
     for k, v in _G.pairs(classicOptions) do
       options[k] = v
     end

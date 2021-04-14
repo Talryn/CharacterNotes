@@ -79,22 +79,23 @@ local defaults = {
 		exportUseNote = true,
 		exportUseRating = true,
 		exportEscape = true,
-    multilineNotes = false,
+    	multilineNotes = false,
 		menusToModify = {
 			["PLAYER"] = true,
 			["PARTY"] = true,
 			["FRIEND"] = true,
 			["FRIEND_OFFLINE"] = true,
 			["RAID_PLAYER"] = true,
-      ["CHAT_ROSTER"] = true,
+      		["CHAT_ROSTER"] = true,
 		},
-    uiModifications = {
-      ["LFGLeaderTooltip"] = true,
-      ["LFGApplicantTooltip"] = true,
-      ["LFGGroupMenuEditNote"] = true,
-      ["GuildRosterTooltip"] = true,
-      ["CommunitiesTooltip"] = true,
-    }
+    	uiModifications = {
+			["unitMenusEdit"] = true,
+			["LFGLeaderTooltip"] = true,
+			["LFGApplicantTooltip"] = true,
+			["LFGGroupMenuEditNote"] = true,
+			["GuildRosterTooltip"] = true,
+			["CommunitiesTooltip"] = true,
+    	}
 	},
 	realm = {
 	    notes = {},
@@ -1291,11 +1292,6 @@ function CharacterNotes:OnEnable()
 	-- Create the Confirm Delete frame for later use
 	confirmDeleteFrame = self:CreateConfirmDeleteFrame()
 
-	-- Add the Edit Note menu item on unit frames
-	if self.db.profile.addMenuItems then
-		self:AddToUnitPopupMenu()
-	end
-
   -- Enable note links
   self:EnableNoteLinks()
 
@@ -1327,9 +1323,6 @@ function CharacterNotes:OnDisable()
     -- Called when the addon is disabled
 	self:UnregisterEvent("CHAT_MSG_SYSTEM")
  	self:UnregisterEvent("GROUP_ROSTER_UPDATE")
-
-	-- Remove the menu items
-	self:RemoveFromUnitPopupMenu()
 end
 
 function CharacterNotes:SetItemRef(link, text, button, ...)
@@ -1355,56 +1348,6 @@ end
 function CharacterNotes:SetHyperlink(frame, link, ...)
   if link and link:match("^charnote:") then return end
   return self.hooks[frame].SetHyperlink(frame, link, ...)
-end
-
-function CharacterNotes:AddToUnitPopupMenu()
-	_G.UnitPopupButtons["CN_EDIT_NOTE"] = { text = L["Edit Note"] }
-
-	for menu, enabled in pairs(self.db.profile.menusToModify) do
-		if menu and enabled then
-			tinsert(_G.UnitPopupMenus[menu],
-				#_G.UnitPopupMenus[menu],
-				"CN_EDIT_NOTE")
-		end
-	end
-
-	self:SecureHook("UnitPopup_ShowMenu")
-end
-
-function CharacterNotes:RemoveFromUnitPopupMenu()
-	self:Unhook("UnitPopup_ShowMenu")
-
-	for menu in pairs(_G.UnitPopupMenus) do
-		for i = #_G.UnitPopupMenus[menu], 1, -1 do
-			if _G.UnitPopupMenus[menu][i] == "CN_EDIT_NOTE" then
-				tremove(_G.UnitPopupMenus[menu], i)
-				break
-			end
-		end
-	end
-
-	_G.UnitPopupButtons["CN_EDIT_NOTE"] = nil
-end
-
-function CharacterNotes:UnitPopup_ShowMenu(dropdownMenu, which, unit, name, userData, ...)
-	for i = 1, _G.UIDROPDOWNMENU_MAXBUTTONS do
-		local button = _G["DropDownList".._G.UIDROPDOWNMENU_MENU_LEVEL.."Button"..i]
-		if button.value == "CN_EDIT_NOTE" then
-      button.func = CharacterNotes.EditNoteMenuClick
-		end
-	end
-end
-
-function CharacterNotes:EditNoteMenuClick()
-	local menu = _G.UIDROPDOWNMENU_INIT_MENU
-	local fullname = NotesDB:FormatNameWithRealm(menu.name, menu.server)
-    if CharacterNotes.db.profile.debug then
-		local strFormat = "Menu Click: %s - %s -> %s"
-    CharacterNotes:Print(strFormat:format(
-			_G.tostring(menu.name), _G.tostring(menu.server),
-			_G.tostring(fullname)))
-    end
-	CharacterNotes:EditNoteHandler(fullname)
 end
 
 function CharacterNotes:IsNotesVisible()
