@@ -4,6 +4,7 @@ local ADDON_NAME, addon = ...
 local CharacterNotes = LibStub("AceAddon-3.0"):GetAddon(addon.addonName)
 local L = LibStub("AceLocale-3.0"):GetLocale(addon.addonName, true)
 local icon = LibStub("LibDBIcon-1.0")
+local LSM = _G.LibStub:GetLibrary("LibSharedMedia-3.0")
 
 function CharacterNotes:GetOptions()
   if not self.options then
@@ -219,6 +220,74 @@ function CharacterNotes:GetOptions()
               get = function(info) return self.db.profile.notesForRaidMembers end,
               order = 430
           },
+
+          fontHeader = {
+            order = 450,
+            type = "header",
+            name = L["Font"],
+          },
+          fontSize = {
+            order = 455,
+            name = L["Font Size"],
+            desc = L["Font Size"],
+            type = "range",
+            min = 8,
+            max = 30,
+            step = 1,
+            set = function(info, val)
+              self.db.profile.fontSize = val
+            end,
+            get = function(info,val) return self.db.profile.fontSize end,
+          },
+          fontFace = {
+            order = 460,
+            type = "select",
+            name = L["Font"],
+            desc = L["Font"],
+            values = LSM:HashTable("font"),
+            dialogControl = 'LSM30_Font',
+            get = function() return self.db.profile.fontFace end,
+            set = function(info, val)
+              self.db.profile.fontFace = val
+            end
+          },
+          fontOutline = {
+            name = L["Outline"],
+            desc = L["Outline"],
+            type = "toggle",
+            order = 465,
+            set = function(info, val)
+              self.db.profile.fontFlags.OUTLINE = val
+            end,
+            get = function(info)
+              return self.db.profile.fontFlags.OUTLINE
+            end,
+          },
+          thickoutline = {
+            name = L["Thick Outline"],
+            desc = L["Thick Outline"],
+            type = "toggle",
+            order = 470,
+            set = function(info, val)
+              self.db.profile.fontFlags.THICKOUTLINE = val
+            end,
+            get = function(info)
+              return self.db.profile.fontFlags.THICKOUTLINE
+            end,
+          },
+          monochrome = {
+            name = L["Monochrome"],
+            desc = L["Monochrome"],
+            type = "toggle",
+            order = 475,
+            set = function(info, val)
+              self.db.profile.fontFlags.MONOCHROME = val
+            end,
+            get = function(info)
+              return self.db.profile.fontFlags.MONOCHROME
+            end,
+          },
+      
           headerInterfaceMods = {
       			order = 500,
       			type = "header",

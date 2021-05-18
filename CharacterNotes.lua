@@ -34,6 +34,7 @@ local AGU = LibStub("AceGUI-3.0")
 local LibDeformat = LibStub("LibDeformat-3.0")
 local LDB = LibStub("LibDataBroker-1.1")
 local icon = LibStub("LibDBIcon-1.0")
+local LSM = _G.LibStub:GetLibrary("LibSharedMedia-3.0")
 local LibAlts = LibStub("LibAlts-1.0")
 
 -- String formats
@@ -56,6 +57,13 @@ local defaults = {
 		},
 		verbose = true,
 		debug = false,
+		fontFace = "Friz Quadrata TT",
+		fontSize = 12,
+		fontFlags = {
+			OUTLINE = true,
+			THICKOUTLINE = false,
+			MONOCHROME = false
+		},
 		mouseoverHighlighting = true,
 		showNotesOnWho = true,
 		showNotesOnLogon = true,
@@ -110,6 +118,17 @@ end
 function CharacterNotes:OnProfileChange()
   addon.db = self.db
 end
+
+addon.fontFlags = {}
+function CharacterNotes:GetFontSettings()
+	wipe(addon.fontFlags)
+	for k, v in pairs(addon.db.profile.fontFlags) do
+			if v then tinsert(addon.fontFlags, k) end
+	end
+	local font = LSM:Fetch("font", addon.db.profile.fontFace)
+	return font, addon.db.profile.fontSize, tconcat(addon.fontFlags, ",")
+end
+addon.GetFontSettings = CharacterNotes.GetFontSettings
 
 function CharacterNotes:OnInitialize()
     -- Called when the addon is loaded
@@ -759,7 +778,10 @@ function CharacterNotes:CreateNotesFrame()
 
 	local table = ScrollingTable:CreateST(cols, 15, nil, nil, noteswindow);
 
-	local headertext = noteswindow:CreateFontString("PN_Notes_HeaderText", noteswindow, "GameFontNormalLarge")
+	local font, fh, fflags = addon.GetFontSettings()
+
+	local headertext = noteswindow:CreateFontString("PN_Notes_HeaderText", "OVERLAY")
+	headertext:SetFont(font, fh + 4, fflags)
 	headertext:SetPoint("TOP", noteswindow, "TOP", 0, -20)
 	headertext:SetText(L["Character Notes"])
 
@@ -956,6 +978,7 @@ function CharacterNotes:NotesDBCheckHandler(input)
 end
 
 function CharacterNotes:CreateConfirmDeleteFrame()
+	local font, fh, fflags = addon.GetFontSettings()
 	local deletewindow = _G.CreateFrame("Frame", "CharacterNotesConfirmDeleteWindow", _G.UIParent, BackdropTemplateMixin and "BackdropTemplate")
 	deletewindow:SetFrameStrata("DIALOG")
 	deletewindow:SetToplevel(true)
@@ -968,15 +991,18 @@ function CharacterNotes:CreateConfirmDeleteFrame()
 		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
 	deletewindow:SetBackdropColor(0,0,0,1)
 
-	local headertext = deletewindow:CreateFontString("CN_Confirm_HeaderText", deletewindow, "GameFontNormalLarge")
+	local headertext = deletewindow:CreateFontString("CN_Confirm_HeaderText", "OVERLAY")
+	headertext:SetFont(font, fh + 4, fflags)
 	headertext:SetPoint("TOP", deletewindow, "TOP", 0, -20)
 	headertext:SetText(L["Delete Note"])
 
-	local warningtext = deletewindow:CreateFontString("CN_Confirm_WarningText", deletewindow, "GameFontNormalLarge")
+	local warningtext = deletewindow:CreateFontString("CN_Confirm_WarningText", "OVERLAY")
+	warningtext:SetFont(font, fh, fflags)
 	warningtext:SetPoint("TOP", headertext, "TOP", 0, -40)
 	warningtext:SetText(L["Are you sure you wish to delete the note for:"])
 
-	local charname = deletewindow:CreateFontString("CN_Confirm_CharName", deletewindow, "GameFontNormal")
+	local charname = deletewindow:CreateFontString("CN_Confirm_CharName", "OVERLAY")
+	charname:SetFont(font, fh, fflags)
 	charname:SetPoint("BOTTOM", warningtext, "BOTTOM", 0, -40)
 	charname:SetFont(charname:GetFont(), 14)
 	charname:SetTextColor(1.0,1.0,1.0,1)
@@ -1019,6 +1045,7 @@ function CharacterNotes:CreateConfirmDeleteFrame()
 end
 
 function CharacterNotes:CreateEditNoteFrame()
+	local font, fh, fflags = addon.GetFontSettings()
 	local editwindow = _G.CreateFrame("Frame", "CharacterNotesEditWindow", _G.UIParent, BackdropTemplateMixin and "BackdropTemplate")
 	editwindow:SetFrameStrata("DIALOG")
 	editwindow:SetToplevel(true)
@@ -1051,16 +1078,18 @@ function CharacterNotes:CreateEditNoteFrame()
 	cancelbutton:SetPoint("BOTTOM", editwindow, "BOTTOM", 60, 20)
 	cancelbutton:SetScript("OnClick", function(this) this:GetParent():Hide(); end)
 
-	local headertext = editwindow:CreateFontString("CN_HeaderText", editwindow, "GameFontNormalLarge")
+	local headertext = editwindow:CreateFontString("CN_HeaderText", "OVERLAY")
+	headertext:SetFont(font, fh + 4, fflags)
 	headertext:SetPoint("TOP", editwindow, "TOP", 0, -20)
 	headertext:SetText(L["Edit Note"])
 
-	local charname = editwindow:CreateFontString("CN_CharName", editwindow, "GameFontNormal")
+	local charname = editwindow:CreateFontString("CN_CharName", "OVERLAY")
 	charname:SetPoint("BOTTOM", headertext, "BOTTOM", 0, -40)
-	charname:SetFont(charname:GetFont(), 14)
+	charname:SetFont(font, fh, fflags)
 	charname:SetTextColor(1.0,1.0,1.0,1)
 
-	local ratingLabel = editwindow:CreateFontString("CN_RatingLabel", editwindow, "GameFontNormal")
+	local ratingLabel = editwindow:CreateFontString("CN_RatingLabel", "OVERLAY")
+	ratingLabel:SetFont(font, fh, fflags)
 	ratingLabel:SetPoint("TOP", charname, "BOTTOM", 0, -30)
 	ratingLabel:SetPoint("LEFT", editwindow, "LEFT", 20, 0)
 	ratingLabel:SetTextColor(1.0,1.0,1.0,1)

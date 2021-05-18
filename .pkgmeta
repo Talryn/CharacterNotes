@@ -46,5 +46,8 @@ externals:
     Libs/LibAlts-1.0:
         url: https://repos.wowace.com/wow/libalts-1-0/trunk
 
+    Libs/LibSharedMedia-3.0:
+        url: https://repos.wowace.com/wow/libsharedmedia-3-0/trunk/LibSharedMedia-3.0
+
 ignore:
     - .pkgmeta
