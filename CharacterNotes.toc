@@ -23,3 +23,4 @@ NotesDB.lua
 CharacterNotes.lua
 Options.lua
 InterfaceMods.lua
+Import.lua

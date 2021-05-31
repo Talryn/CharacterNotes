@@ -87,6 +87,7 @@ local defaults = {
 		exportUseNote = true,
 		exportUseRating = true,
 		exportEscape = true,
+		importOverwrite = false,
     	multilineNotes = false,
     	uiModifications = {
 			["unitMenusEdit"] = true,
@@ -550,54 +551,8 @@ function CharacterNotes:GenerateNotesExport()
     return notesExportText
 end
 
-local NotesImportFrame = nil
-function CharacterNotes:ShowNotesImportFrame()
-    if NotesImportFrame then return end
-
-	local frame = AGU:Create("Frame")
-	frame:SetTitle(L["Notes Import"])
-	frame:SetWidth(650)
-	frame:SetHeight(400)
-    frame:SetLayout("Flow")
-	frame:SetCallback("OnClose", function(widget)
-		widget:ReleaseChildren()
-		widget:Release()
-		NotesImportFrame = nil
-	end)
-
-    NotesImportFrame = frame
-
-    local multiline = AGU:Create("MultiLineEditBox")
-    multiline:SetLabel(L["NotesImport_ImportLabel"])
-    multiline:SetNumLines(10)
-    multiline:SetMaxLetters(0)
-    multiline:SetFullWidth(true)
-    multiline:DisableButton(true)
-    frame:AddChild(multiline)
-    frame.multiline = multiline
-
-    local spacer = AGU:Create("Label")
-    spacer:SetText(" ")
-    spacer:SetFullWidth(true)
-    frame:AddChild(spacer)
-
-    local importButton = AGU:Create("Button")
-    importButton:SetText(L["Import"])
-    importButton:SetCallback("OnClick",
-        function(widget)
-            CharacterNotes:ImportNotesFromText(
-                NotesImportFrame.multiline:GetText())
-        end)
-    frame:AddChild(importButton)
-end
-
-function CharacterNotes:ImportNotesFromText(importData)
-
-end
-
-local NotesExportFrame = nil
 function CharacterNotes:ShowNotesExportFrame()
-    if NotesExportFrame then return end
+    if addon.NotesExportFrame then return end
 
 	local frame = AGU:Create("Frame")
 	frame:SetTitle(L["Notes Export"])
@@ -607,10 +562,10 @@ function CharacterNotes:ShowNotesExportFrame()
 	frame:SetCallback("OnClose", function(widget)
 		widget:ReleaseChildren()
 		widget:Release()
-		NotesExportFrame = nil
+		addon.NotesExportFrame = nil
 	end)
 
-    NotesExportFrame = frame
+    addon.NotesExportFrame = frame
 
     local multiline = AGU:Create("MultiLineEditBox")
     multiline:SetLabel(L["NotesExport_ExportLabel"])
@@ -780,7 +735,7 @@ function CharacterNotes:CreateNotesFrame()
 
 	local font, fh, fflags = addon.GetFontSettings()
 
-	local headertext = noteswindow:CreateFontString("PN_Notes_HeaderText", "OVERLAY")
+	local headertext = noteswindow:CreateFontString("CN_Notes_HeaderText", "OVERLAY")
 	headertext:SetFont(font, fh + 4, fflags)
 	headertext:SetPoint("TOP", noteswindow, "TOP", 0, -20)
 	headertext:SetText(L["Character Notes"])

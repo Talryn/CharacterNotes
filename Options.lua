@@ -327,19 +327,18 @@ function CharacterNotes:GetOptions()
       			type = "header",
       			name = L["Import"],
       		},
-              guildImportButton = {
-                  name = L["Notes Import"],
-                  desc = L["NotesImport_OptionDesc"],
-                  type = "execute",
-                  width = "normal",
-                  disabled = true,
-                  func = function()
-                  	local optionsFrame = _G.InterfaceOptionsFrame
-                      optionsFrame:Hide()
-                      self:NotesImportHandler("")
-                  end,
-      			order = 210
-              },
+          guildImportButton = {
+              name = L["Notes Import"],
+              desc = L["NotesImport_OptionDesc"],
+              type = "execute",
+              width = "normal",
+              func = function()
+                local optionsFrame = _G.InterfaceOptionsFrame
+                  optionsFrame:Hide()
+                  self:NotesImportHandler("")
+              end,
+       			  order = 210
+            },
           }
         }
       }
