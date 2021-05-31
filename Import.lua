@@ -30,6 +30,7 @@ function CharacterNotes:ShowNotesImportFrame()
 	end)
 
     addon.NotesImportFrame = frame
+	local font, fh, fflags = addon.GetFontSettings()
 
     local multiline = AGU:Create("MultiLineEditBox")
     multiline:SetLabel(L["NotesImport_ImportLabel"])
@@ -56,6 +57,7 @@ function CharacterNotes:ShowNotesImportFrame()
     frame:AddChild(overwriteOption)
 
     local disclaimer = AGU:Create("Label")
+	disclaimer:SetFont(font, fh + 2, fflags)
     disclaimer:SetText(L["ImportDisclaimer"])
     disclaimer:SetColor(1, 0, 0)
     disclaimer:SetFullWidth(true)
