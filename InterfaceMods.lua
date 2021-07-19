@@ -549,11 +549,21 @@ do
 		GameTooltip:Hide()
 	end
 
+	local ignoreFrame = _G.IgnoreListFrameScrollFrame
+	local function getButton(index)
+		if ignoreFrame then
+			local buttons = ignoreFrame.buttons
+			return buttons[index]
+		else
+			return _G["FriendsFrameIgnoreButton"..index]
+		end
+	end
+
 	function module:Setup()
 		if not IsEnabled() then return end
 
-		for count = 1, IGNORES_TO_DISPLAY do
-			local button = _G["FriendsFrameIgnoreButton"..count]
+		for index = 1, IGNORES_TO_DISPLAY do
+			local button = getButton(index)
 			if button then
 				button:HookScript("OnEnter", IgnoreButtonEnter)
 				button:HookScript("OnLeave", IgnoreButtonLeave)
