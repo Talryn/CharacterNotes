@@ -33,6 +33,7 @@ function CharacterNotes:EnableInterfaceModifications()
 
   -- Works for all versions
   CharacterNotes:EnableModule("UnitPopupMenus")
+  CharacterNotes:EnableModule("IgnoreTooltip")
 end
 
 function CharacterNotes.LFGListUtil_SetSearchEntryTooltip(tooltip, resultID, autoAcceptOption)
@@ -495,6 +496,69 @@ do
 
 		LibDropDownExtension:RegisterEvent("OnShow OnHide", OnToggle, 1, self)
 		self.enabled = true
+	end
+
+	function module:OnEnable()
+		self:Setup()
+	end
+end
+
+do
+	local module = CharacterNotes:NewModule("IgnoreTooltip")
+	module.enabled = false
+
+	local function IsEnabled()
+    	return addon.db.profile.uiModifications.ignoreTooltips
+  	end
+
+	local function IgnoreButtonEnter(self, ...)
+		local label = self.name
+		if not label then return end
+		if _G.type(label.GetText) ~= "function" then 
+			return
+		end
+
+		local name = label:GetText()
+		if not name then return end
+
+		local note, rating, main, nameFound = NotesDB:GetInfoForNameOrMain(name)
+		if note then
+			if GameTooltip:GetOwner() == nil then
+				GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+				GameTooltip:AddLine(nameFound or name)
+				GameTooltip:AddLine(" ")
+			else
+				GameTooltip:AddLine(" ")
+			end
+
+			if addon.db.profile.wrapTooltip == true then
+				note = wrap(note, addon.db.profile.wrapTooltipLength, "    ", "", 4)
+			end
+
+			if main and #main > 0 then
+				GameTooltip:AddLine(Formats.tooltipNoteWithMain:format(GetRatingColor(rating), nameFound, note))
+			else
+				GameTooltip:AddLine(Formats.tooltipNote:format(GetRatingColor(rating), note))
+			end
+
+			GameTooltip:Show()
+		end
+	end
+
+	local function IgnoreButtonLeave(self, ...)
+		GameTooltip:Hide()
+	end
+
+	function module:Setup()
+		if not IsEnabled() then return end
+
+		for count = 1, IGNORES_TO_DISPLAY do
+			local button = _G["FriendsFrameIgnoreButton"..count]
+			if button then
+				button:HookScript("OnEnter", IgnoreButtonEnter)
+				button:HookScript("OnLeave", IgnoreButtonLeave)
+			end
+		end	
 	end
 
 	function module:OnEnable()

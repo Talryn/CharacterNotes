@@ -366,6 +366,14 @@ function CharacterNotes:InterfaceModsOptions()
       get = function(info) return self.db.profile.uiModifications.unitMenusEdit end,
       order = baseOrderAll + 10
     },
+    ignoreTooltips = {
+      name = L["Ignore Tooltips"],
+      desc = L["IgnoreTooltips_Opt"],
+      type = "toggle",
+      set = function(info,val) self.db.profile.uiModifications.ignoreTooltips = val end,
+      get = function(info) return self.db.profile.uiModifications.ignoreTooltips end,
+      order = baseOrderAll + 20
+    },
   }
 
   -- Options for current retail version.

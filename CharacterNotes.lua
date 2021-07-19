@@ -96,6 +96,7 @@ local defaults = {
 			["LFGGroupMenuEditNote"] = true,
 			["GuildRosterTooltip"] = true,
 			["CommunitiesTooltip"] = true,
+			["ignoreTooltips"] = true,
     	}
 	},
 	realm = {
