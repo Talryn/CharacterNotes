@@ -38,18 +38,8 @@ jobs:
           # which is useful for controlling the length of the automated changelog
           fetch-depth: 50
 
-      # Package and release the retail version
+      # Package and release all versions
       - name: Package and release
-        uses: BigWigsMods/packager@master
-
-      # Package and release the Classic version
-      - name: Package and release for Classic
-        uses: BigWigsMods/packager@master
-        with:
-          args: -g classic
-
-      # Package and release the TBC version
-      - name: Package and release for TBC
-        uses: BigWigsMods/packager@master
-        with:
-          args: -g bcc
+        uses: BigWigsMods/packager@v2
+        #with:
+        #  args: -S
