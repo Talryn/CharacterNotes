@@ -226,7 +226,7 @@ function CharacterNotes:OnInitialize()
 end
 
 function CharacterNotes:CreateCharNoteTooltip()
-    CharNoteTooltip = _G.CreateFrame("GameTooltip", "CharNoteTooltip", _G.UIParent, "GameTooltipTemplate")
+    CharNoteTooltip = _G.CreateFrame("GameTooltip", "CharNoteTooltip", _G.UIParent, BackdropTemplateMixin and "GameTooltipTemplate,BackdropTemplate" or "GameTooltipTemplate")
     CharNoteTooltip:SetOwner(_G.WorldFrame, "ANCHOR_NONE")
 	CharNoteTooltip:SetFrameStrata("DIALOG")
     CharNoteTooltip:SetSize(100,100)
@@ -1313,7 +1313,7 @@ function CharacterNotes:SetItemRef(link, text, button, ...)
             CharNoteTooltip:SetOwner(_G.UIParent, "ANCHOR_PRESERVE")
         end
         CharNoteTooltip:ClearLines()
-        CharNoteTooltip:AddLine(nameFound, 1, 1, 0)
+        CharNoteTooltip:AddLine(nameFound .. "    ", 1, 1, 0, false)
         CharNoteTooltip:AddLine(note or "", 1, 1, 1, true)
         CharNoteTooltip:SetBackdropBorderColor(1, 1, 1, 1)
         CharNoteTooltip:Show()
