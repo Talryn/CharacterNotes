@@ -13,6 +13,7 @@
 ## SavedVariables: CharacterNotesDB
 ## X-Curse-Project-ID: 24993
 ## X-WoWI-ID: 17406
+## X-Wago-ID: nQN54pGB
 
 embeds.xml
 
