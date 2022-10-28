@@ -184,7 +184,7 @@ function CharacterNotes:OnInitialize()
 		icon = "Interface\\Icons\\INV_Misc_Note_06.blp",
 		OnClick = function(clickedframe, button)
     		if button == "RightButton" then
-    			local optionsFrame = _G.InterfaceOptionsFrame
+    			local optionsFrame = self.optionsFrame
 
     			if optionsFrame:IsVisible() then
     				optionsFrame:Hide()
