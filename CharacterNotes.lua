@@ -196,7 +196,7 @@ function CharacterNotes:OnInitialize()
     			if self:IsNotesVisible() then
     				self:HideNotesWindow()
     			else
-        			local optionsFrame = _G.InterfaceOptionsFrame
+        			local optionsFrame = self.optionsFrame
     			    optionsFrame:Hide()
     				self:NotesHandler("")
     			end

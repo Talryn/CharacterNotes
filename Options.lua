@@ -316,7 +316,7 @@ function CharacterNotes:GetOptions()
                   type = "execute",
                   width = "normal",
                   func = function()
-                  	local optionsFrame = _G.InterfaceOptionsFrame
+                  	local optionsFrame = self.optionsFrame
                       optionsFrame:Hide()
                       self:NotesExportHandler("")
                   end,
@@ -333,7 +333,7 @@ function CharacterNotes:GetOptions()
               type = "execute",
               width = "normal",
               func = function()
-                local optionsFrame = _G.InterfaceOptionsFrame
+                local optionsFrame = self.optionsFrame
                   optionsFrame:Hide()
                   self:NotesImportHandler("")
               end,
