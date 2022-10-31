@@ -14,6 +14,56 @@ local NotesDB = addon.NotesDB
 local CharacterNotes = _G.LibStub("AceAddon-3.0"):GetAddon(addon.addonName)
 local L = LibStub("AceLocale-3.0"):GetLocale(addon.addonName, true)
 
+local ScrollBoxUtil = {}
+function ScrollBoxUtil:OnViewFramesChanged(scrollBox, callback)
+	if not scrollBox then return end
+	if scrollBox.buttons then
+		callback(scrollBox.buttons, scrollBox)
+		return
+	end
+	if scrollBox.RegisterCallback then
+		local frames = scrollBox:GetFrames()
+		if frames and frames[1] then
+			callback(frames, scrollBox)
+		end
+		scrollBox:RegisterCallback(ScrollBoxListMixin.Event.OnUpdate, function()
+			callback(scrollBox:GetFrames(), scrollBox)
+		end)
+		return
+	end
+end
+
+function ScrollBoxUtil:OnViewScrollChanged(scrollBox, callback)
+	if not scrollBox then return end
+	local function wrappedCallback()
+		callback(scrollBox)
+	end
+	if scrollBox.update then
+		hooksecurefunc(scrollBox, "update", wrappedCallback)
+		return
+	end
+	if scrollBox.RegisterCallback then
+		scrollBox:RegisterCallback(ScrollBoxListMixin.Event.OnScroll, wrappedCallback)
+		return
+	end
+end
+
+local hooked = {}
+local function HookAllFrames(frames, callback, ...)
+	for _, frame in ipairs(frames) do
+		hooked[frame] = hooked[frame] or {}
+		local hook = hooked[frame]
+		for _, func in ipairs({...}) do
+			hook[func] = hook[func] or {}
+			local fnHook = hook[func]
+			if not fnHook[callback] then
+				frame:HookScript(func, callback)
+				fnHook[callback] = true
+			end
+		end
+	end
+end
+
 function CharacterNotes:EnableInterfaceModifications()
   if addon.Retail then
     if self.db.profile.uiModifications["LFGLeaderTooltip"] then
@@ -133,9 +183,9 @@ do
 	module.enabled = false
 
 	local function OnEnter(self)
-    if not IsEnabled() then return end
-    if not self.guildIndex then return end
-    local name = _G.GetGuildRosterInfo(self.guildIndex)
+	    if not IsEnabled() then return end
+    	if not self.guildIndex then return end
+    	local name = _G.GetGuildRosterInfo(self.guildIndex)
 		local note, rating, main, nameFound = NotesDB:GetInfoForNameOrMain(name)
 		if note then
 			GameTooltip:AddLine(" ")
@@ -155,23 +205,23 @@ do
 	end
 
 	local function OnLeave(self)
-    if not IsEnabled() then return end
-    if not self.guildIndex then return end
-    GameTooltip:Hide()
-  end
+	    if not IsEnabled() then return end
+    	if not self.guildIndex then return end
+    	GameTooltip:Hide()
+	end
 
 	local function OnScroll()
-    if not IsEnabled() then return end
+    	if not IsEnabled() then return end
 		GameTooltip:Hide()
 		pcall(_G.GetMouseFocus(), "OnEnter")
 	end
 
-  local function IsEnabled()
-    if not addon.Retail then
-      return false
-    end
-    return addon.db.profile.uiModifications.GuildRosterTooltip
-  end
+	local function IsEnabled()
+    	if not addon.Retail then
+      		return false
+    	end
+    	return addon.db.profile.uiModifications.GuildRosterTooltip
+	end
 
 	function module:Setup()
 		if not IsEnabled() or self.enabled then return end
@@ -182,11 +232,9 @@ do
 			end)
 			return
 		end
-		for _, button in pairs(_G.GuildRosterContainer.buttons) do
-			button:HookScript("OnEnter", OnEnter)
-			button:HookScript("OnLeave", OnLeave)
-		end
-		hooksecurefunc(_G.GuildRosterContainer, "update", OnScroll)
+		local hooks = { OnEnter = OnEnter, OnLeave = OnLeave }
+		ScrollBoxUtil:OnViewFramesChanged(_G.GuildRosterContainer, function(frames) HookAllFrames(frames, hooks) end)
+		ScrollBoxUtil:OnViewScrollChanged(_G.GuildRosterContainer, OnScroll)
 		self.enabled = true
 	end
 
@@ -196,40 +244,40 @@ do
 end
 
 function AddNoteToTooltip(tooltip, name, anchor)
-  local spacer = true
-  local anchorPoint = anchor or "ANCHOR_LEFT"
-  local note, rating, main, nameFound = NotesDB:GetInfoForNameOrMain(name)
-  if note then
-    if tooltip:GetOwner() == nil then
-      tooltip:SetOwner(self, anchorPoint)
-    elseif spacer then
-      tooltip:AddLine(" ")
-    end
+	local spacer = true
+	local anchorPoint = anchor or "ANCHOR_LEFT"
+	local note, rating, main, nameFound = NotesDB:GetInfoForNameOrMain(name)
+	if note then
+		if tooltip:GetOwner() == nil then
+			tooltip:SetOwner(self, anchorPoint)
+		elseif spacer then
+			tooltip:AddLine(" ")
+		end
 
-    if addon.db.profile.wrapTooltip == true then
-      note = wrap(note, addon.db.profile.wrapTooltipLength, "    ", "", 4)
-    end
+		if addon.db.profile.wrapTooltip == true then
+	    	note = wrap(note, addon.db.profile.wrapTooltipLength, "    ", "", 4)
+		end
 
-    if main and #main > 0 then
-      tooltip:AddLine(Formats.tooltipNoteWithMain:format(GetRatingColor(rating), nameFound, note))
-    else
-      tooltip:AddLine(Formats.tooltipNote:format(GetRatingColor(rating), note))
-    end
+		if main and #main > 0 then
+			tooltip:AddLine(Formats.tooltipNoteWithMain:format(GetRatingColor(rating), nameFound, note))
+		else
+			tooltip:AddLine(Formats.tooltipNote:format(GetRatingColor(rating), note))
+		end
 
-    tooltip:Show()
-  end
+    	tooltip:Show()
+	end
 end
 
 do
 	local module = CharacterNotes:NewModule("CommunitiesTooltip")
 	module.enabled = false
 
-  local function IsEnabled()
-    if not addon.Retail then
-      return false
-    end
-    return addon.db.profile.uiModifications.CommunitiesTooltip
-  end
+	local function IsEnabled()
+    	if not addon.Retail then
+      		return false
+    	end
+    	return addon.db.profile.uiModifications.CommunitiesTooltip
+	end
 
 	local function IsCharacter(clubType)
 		return clubType and (clubType == Enum.ClubType.Guild or
@@ -237,17 +285,17 @@ do
 	end
 
 	local function OnEnter(self)
-    if not IsEnabled() then return end
+	    if not IsEnabled() then return end
 		local name
-    if type(self.GetMemberInfo) == "function" then
-      local info = self:GetMemberInfo()
-		  if not IsCharacter(info.clubType) then return end
-      name = info.name
-    elseif type(self.cardInfo) == "table" then
-      name = self.cardInfo.guildLeader
-    else
-      return
-    end
+    	if type(self.GetMemberInfo) == "function" then
+    		local info = self:GetMemberInfo()
+			if not IsCharacter(info.clubType) then return end
+    		name = info.name
+    	elseif type(self.cardInfo) == "table" then
+      		name = self.cardInfo.guildLeader
+    	else
+      		return
+    	end
 		if not name then return end
 
 		local note, rating, main, nameFound = NotesDB:GetInfoForNameOrMain(name)
@@ -273,13 +321,13 @@ do
 	end
 
 	local function OnLeave(self)
-    if not IsEnabled() then return end
-    if not self.guildIndex then return end
-    GameTooltip:Hide()
-  end
+	    if not IsEnabled() then return end
+    	if not self.guildIndex then return end
+    	GameTooltip:Hide()
+  	end
 
 	local function OnScroll()
-    if not IsEnabled() then return end
+	    if not IsEnabled() then return end
 		GameTooltip:Hide()
 		pcall(_G.GetMouseFocus(), "OnEnter")
 	end
@@ -291,29 +339,24 @@ do
 			if not hooked[frame] then
 				frame:HookScript("OnEnter", OnEnter)
 				frame:HookScript("OnLeave", OnLeave)
-        if type(frame.OnEnter) == "function" then hooksecurefunc(frame, "OnEnter", OnEnter) end
-        if type(frame.OnLeave) == "function" then hooksecurefunc(frame, "OnLeave", OnLeave) end
+        		if type(frame.OnEnter) == "function" then hooksecurefunc(frame, "OnEnter", OnEnter) end
+        		if type(frame.OnLeave) == "function" then hooksecurefunc(frame, "OnLeave", OnLeave) end
 				hooked[frame] = true
 			end
 		end
 	end
 
 	local function OnRefreshLayout()
-    if not IsEnabled() then return end
-		HookFrames(_G.CommunitiesFrame.MemberList.ListScrollFrame.buttons)
-    HookFrames(_G.ClubFinderGuildFinderFrame.CommunityCards.ListScrollFrame.buttons)
-    HookFrames(_G.ClubFinderGuildFinderFrame.PendingCommunityCards.ListScrollFrame.buttons)
-    HookFrames(_G.ClubFinderGuildFinderFrame.GuildCards.Cards)
-    HookFrames(_G.ClubFinderGuildFinderFrame.PendingGuildCards.Cards)
-    HookFrames(_G.ClubFinderCommunityAndGuildFinderFrame.CommunityCards.ListScrollFrame.buttons)
-    HookFrames(_G.ClubFinderCommunityAndGuildFinderFrame.PendingCommunityCards.ListScrollFrame.buttons)
-    HookFrames(_G.ClubFinderCommunityAndGuildFinderFrame.GuildCards.Cards)
-    HookFrames(_G.ClubFinderCommunityAndGuildFinderFrame.PendingGuildCards.Cards)
+	    if not IsEnabled() then return end
+		HookFrames(_G.ClubFinderGuildFinderFrame.GuildCards.Cards)
+        HookFrames(_G.ClubFinderGuildFinderFrame.PendingGuildCards.Cards)
+        HookFrames(_G.ClubFinderCommunityAndGuildFinderFrame.GuildCards.Cards)
+        HookFrames(_G.ClubFinderCommunityAndGuildFinderFrame.PendingGuildCards.Cards)
 		return true
 	end
 
 	function module:Setup()
-    if not IsEnabled() then return end
+    	if not IsEnabled() then return end
 		if self.enabled then return end
 		if not (_G.CommunitiesFrame and _G.ClubFinderGuildFinderFrame and _G.ClubFinderCommunityAndGuildFinderFrame) then
 			-- If enabled, keep trying until the guild frame is loaded.
@@ -323,20 +366,20 @@ do
 			return
 		end
 
-    hooksecurefunc(_G.CommunitiesFrame.MemberList, "RefreshLayout", OnRefreshLayout)
-    hooksecurefunc(_G.CommunitiesFrame.MemberList, "Update", OnScroll)
-    hooksecurefunc(_G.ClubFinderGuildFinderFrame.CommunityCards, "RefreshLayout", OnRefreshLayout)
-    hooksecurefunc(_G.ClubFinderGuildFinderFrame.CommunityCards.ListScrollFrame, "update", OnScroll)
-    hooksecurefunc(_G.ClubFinderGuildFinderFrame.PendingCommunityCards, "RefreshLayout", OnRefreshLayout)
-    hooksecurefunc(_G.ClubFinderGuildFinderFrame.PendingCommunityCards.ListScrollFrame, "update", OnScroll)
-    hooksecurefunc(_G.ClubFinderGuildFinderFrame.GuildCards, "RefreshLayout", OnRefreshLayout)
-    hooksecurefunc(_G.ClubFinderGuildFinderFrame.PendingGuildCards, "RefreshLayout", OnRefreshLayout)
-    hooksecurefunc(_G.ClubFinderCommunityAndGuildFinderFrame.CommunityCards, "RefreshLayout", OnRefreshLayout)
-    hooksecurefunc(_G.ClubFinderCommunityAndGuildFinderFrame.CommunityCards.ListScrollFrame, "update", OnScroll)
-    hooksecurefunc(_G.ClubFinderCommunityAndGuildFinderFrame.PendingCommunityCards, "RefreshLayout", OnRefreshLayout)
-    hooksecurefunc(_G.ClubFinderCommunityAndGuildFinderFrame.PendingCommunityCards.ListScrollFrame, "update", OnScroll)
-    hooksecurefunc(_G.ClubFinderCommunityAndGuildFinderFrame.GuildCards, "RefreshLayout", OnRefreshLayout)
-    hooksecurefunc(_G.ClubFinderCommunityAndGuildFinderFrame.PendingGuildCards, "RefreshLayout", OnRefreshLayout)
+        ScrollBoxUtil:OnViewFramesChanged(_G.CommunitiesFrame.MemberList.ListScrollFrame or _G.CommunitiesFrame.MemberList.ScrollBox, HookFrames)
+        ScrollBoxUtil:OnViewScrollChanged(_G.CommunitiesFrame.MemberList.ListScrollFrame or _G.CommunitiesFrame.MemberList.ScrollBox, OnScroll)
+        ScrollBoxUtil:OnViewFramesChanged(_G.ClubFinderGuildFinderFrame.CommunityCards.ListScrollFrame or _G.ClubFinderGuildFinderFrame.CommunityCards.ScrollBox, HookFrames)
+        ScrollBoxUtil:OnViewScrollChanged(_G.ClubFinderGuildFinderFrame.CommunityCards.ListScrollFrame or _G.ClubFinderGuildFinderFrame.CommunityCards.ScrollBox, OnScroll)
+        ScrollBoxUtil:OnViewFramesChanged(_G.ClubFinderGuildFinderFrame.PendingCommunityCards.ListScrollFrame or _G.ClubFinderGuildFinderFrame.PendingCommunityCards.ScrollBox, HookFrames)
+        ScrollBoxUtil:OnViewScrollChanged(_G.ClubFinderGuildFinderFrame.PendingCommunityCards.ListScrollFrame or _G.ClubFinderGuildFinderFrame.PendingCommunityCards.ScrollBox, OnScroll)
+        ScrollBoxUtil:OnViewFramesChanged(_G.ClubFinderCommunityAndGuildFinderFrame.CommunityCards.ListScrollFrame or _G.ClubFinderCommunityAndGuildFinderFrame.CommunityCards.ScrollBox, HookFrames)
+        ScrollBoxUtil:OnViewScrollChanged(_G.ClubFinderCommunityAndGuildFinderFrame.CommunityCards.ListScrollFrame or _G.ClubFinderCommunityAndGuildFinderFrame.CommunityCards.ScrollBox, OnScroll)
+        ScrollBoxUtil:OnViewFramesChanged(_G.ClubFinderCommunityAndGuildFinderFrame.PendingCommunityCards.ListScrollFrame or _G.ClubFinderCommunityAndGuildFinderFrame.PendingCommunityCards.ScrollBox, HookFrames)
+        ScrollBoxUtil:OnViewScrollChanged(_G.ClubFinderCommunityAndGuildFinderFrame.PendingCommunityCards.ListScrollFrame or _G.ClubFinderCommunityAndGuildFinderFrame.PendingCommunityCards.ScrollBox, OnScroll)
+        hooksecurefunc(_G.ClubFinderGuildFinderFrame.GuildCards, "RefreshLayout", OnRefreshLayout)
+        hooksecurefunc(_G.ClubFinderGuildFinderFrame.PendingGuildCards, "RefreshLayout", OnRefreshLayout)
+        hooksecurefunc(_G.ClubFinderCommunityAndGuildFinderFrame.GuildCards, "RefreshLayout", OnRefreshLayout)
+        hooksecurefunc(_G.ClubFinderCommunityAndGuildFinderFrame.PendingGuildCards, "RefreshLayout", OnRefreshLayout)
 		self.enabled = true
 	end
 
