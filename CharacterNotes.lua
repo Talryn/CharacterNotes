@@ -114,7 +114,12 @@ local previousGroup = {}
 local playerName = _G.GetUnitName("player", true)
 
 function CharacterNotes:ShowOptions()
-	_G.InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Main)
+	if Settings and Settings.OpenToCategory and 
+		_G.type(Settings.OpenToCategory) == "function" then
+		Settings.OpenToCategory(addon.addonTitle)
+	else
+		_G.InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Main)
+	end
 end
 
 function CharacterNotes:OnProfileChange()
@@ -155,8 +160,8 @@ function CharacterNotes:OnInitialize()
 	--    "CharacterNotes", ADDON_NAME)
 
   -- Register the options table
-  local displayName = _G.GetAddOnMetadata(ADDON_NAME, "Title")
-	self.options = self:GetOptions()
+  local displayName = addon.addonTitle
+  self.options = self:GetOptions()
   LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable(displayName, self.options)
   self.optionsFrame = {}
   local ACD = LibStub("AceConfigDialog-3.0")
@@ -183,10 +188,9 @@ function CharacterNotes:OnInitialize()
 		type = "launcher",
 		icon = "Interface\\Icons\\INV_Misc_Note_06.blp",
 		OnClick = function(clickedframe, button)
-			local optionsFrame = _G.SettingsPanel or _G.InterfaceOptionsFrame
     		if button == "RightButton" then
-    			if optionsFrame:IsVisible() then
-    				optionsFrame:Hide()
+    			if addon.IsGameOptionsVisible() then
+    				addon.HideGameOptions()
     			else
     			    self:HideNotesWindow()
     				self:ShowOptions()
@@ -195,7 +199,7 @@ function CharacterNotes:OnInitialize()
     			if self:IsNotesVisible() then
     				self:HideNotesWindow()
     			else
-    			    optionsFrame:Hide()
+    			    addon.HideGameOptions()
     				self:NotesHandler("")
     			end
             end

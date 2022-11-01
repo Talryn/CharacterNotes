@@ -316,9 +316,8 @@ function CharacterNotes:GetOptions()
                   type = "execute",
                   width = "normal",
                   func = function()
-                  	local optionsFrame = self.optionsFrame
-                      optionsFrame:Hide()
-                      self:NotesExportHandler("")
+                    addon.HideGameOptions()
+                    self:NotesExportHandler("")
                   end,
       			order = 110
               },
@@ -333,9 +332,8 @@ function CharacterNotes:GetOptions()
               type = "execute",
               width = "normal",
               func = function()
-                local optionsFrame = self.optionsFrame
-                  optionsFrame:Hide()
-                  self:NotesImportHandler("")
+                addon.HideGameOptions()
+                self:NotesImportHandler("")
               end,
        			  order = 210
             },

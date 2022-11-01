@@ -1,6 +1,18 @@
 local _G = getfenv(0)
 local ADDON_NAME, addon = ...
 
+-- Try to remove the Git hash at the end, otherwise return the passed in value.
+local function cleanupVersion(version)
+	local iter = string.gmatch(version, "(.*)-[a-z0-9]+$")
+	if iter then
+		local ver = iter()
+		if ver and #ver >= 3 then
+			return ver
+		end
+	end
+	return version
+end
+
 local function versionInRange(version, start, finish)
   if _G.type(version) ~= "number" then return false end
   local start = start or 0
@@ -8,6 +20,9 @@ local function versionInRange(version, start, finish)
   if _G.type(start) ~= "number" or _G.type(finish) ~= "number" then return false end
   return version >= start and version < finish
 end
+
+addon.addonTitle = _G.GetAddOnMetadata(ADDON_NAME,"Title")
+addon.addonVersion = cleanupVersion("@project-version@")
 
 addon.CURRENT_BUILD, addon.CURRENT_INTERNAL,
   addon.CURRENT_BUILD_DATE, addon.CURRENT_UI_VERSION = _G.GetBuildInfo()
@@ -105,4 +120,25 @@ function addon.wrap(str, limit, indent, indent1,offset)
 				return "\n"..indent..word
 			end
 		end)
+end
+
+function addon.IsGameOptionsVisible()
+	local optionsFrame = _G.SettingsPanel or _G.InterfaceOptionsFrame
+    return optionsFrame and optionsFrame:IsVisible() or false
+end
+
+function addon.ShowGameOptions()
+	local optionsFrame = _G.SettingsPanel or _G.InterfaceOptionsFrame
+    optionsFrame:Show()
+end
+
+function addon.HideGameOptions()
+	local optionsFrame = _G.SettingsPanel or _G.InterfaceOptionsFrame
+	if _G.SettingsPanel then
+		if not _G.UnitAffectingCombat("player") then
+			_G.HideUIPanel(optionsFrame)
+		end
+	else
+		optionsFrame:Hide()
+	end
 end
