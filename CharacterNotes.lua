@@ -183,9 +183,8 @@ function CharacterNotes:OnInitialize()
 		type = "launcher",
 		icon = "Interface\\Icons\\INV_Misc_Note_06.blp",
 		OnClick = function(clickedframe, button)
+			local optionsFrame = _G.SettingsPanel or _G.InterfaceOptionsFrame
     		if button == "RightButton" then
-    			local optionsFrame = self.optionsFrame
-
     			if optionsFrame:IsVisible() then
     				optionsFrame:Hide()
     			else
@@ -196,7 +195,6 @@ function CharacterNotes:OnInitialize()
     			if self:IsNotesVisible() then
     				self:HideNotesWindow()
     			else
-        			local optionsFrame = self.optionsFrame
     			    optionsFrame:Hide()
     				self:NotesHandler("")
     			end
