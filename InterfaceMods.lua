@@ -49,16 +49,16 @@ function ScrollBoxUtil:OnViewScrollChanged(scrollBox, callback)
 end
 
 local hooked = {}
-local function HookAllFrames(frames, callback, ...)
+local function HookAllFrames(frames, functions)
 	for _, frame in ipairs(frames) do
 		hooked[frame] = hooked[frame] or {}
 		local hook = hooked[frame]
-		for _, func in ipairs({...}) do
-			hook[func] = hook[func] or {}
-			local fnHook = hook[func]
-			if not fnHook[callback] then
-				frame:HookScript(func, callback)
-				fnHook[callback] = true
+		for script, func in pairs(functions) do
+			hook[script] = hook[script] or {}
+			local fnHook = hook[script]
+			if not fnHook[func] then
+				frame:HookScript(script, func)
+				fnHook[func] = true
 			end
 		end
 	end
@@ -70,13 +70,10 @@ function CharacterNotes:EnableInterfaceModifications()
       hooksecurefunc("LFGListUtil_SetSearchEntryTooltip",
         CharacterNotes.LFGListUtil_SetSearchEntryTooltip)
     end
-    if self.db.profile.uiModifications["LFGApplicantTooltip"] then
-      hooksecurefunc("LFGListApplicationViewer_UpdateResults",
-        CharacterNotes.LFGListApplicationViewer_UpdateResults)
-    end
     if self.db.profile.uiModifications["LFGGroupMenuEditNote"] then
       hooksecurefunc("EasyMenu_Initialize", CharacterNotes.EasyMenu_Initialize)
     end
+	CharacterNotes:EnableModule("LFGApplicantTooltip")
 	CharacterNotes:EnableModule("GuildTooltip")
 	CharacterNotes:EnableModule("CommunitiesTooltip")
   end
@@ -110,43 +107,90 @@ function CharacterNotes.LFGListUtil_SetSearchEntryTooltip(tooltip, resultID, aut
 	end
 end
 
--- LFG applicant tooltip
-local function OnLeaveHideTooltip(self)
-	GameTooltip:Hide()
-end
+do
+	local module = CharacterNotes:NewModule("LFGApplicantTooltip")
+	module.enabled = false
+	local activeEntry = {}
 
-local applicantHooked = {}
-function CharacterNotes.LFGListApplicationViewer_UpdateResults(self)
-	for _, button in ipairs(self.ScrollFrame.buttons) do
-		if button.applicantID and button.Members then
-			for _, member in ipairs(button.Members) do
-				if not applicantHooked[member] then
-					applicantHooked[member] = true
-					member:HookScript("OnEnter", function()
-						local name = C_LFGList.GetApplicantMemberInfo(button.applicantID, 1)
-						local note, rating, main, nameFound = NotesDB:GetInfoForNameOrMain(name)
+	local OnEnter, OnLeave
 
-						if note then
-							GameTooltip:AddLine(" ")
+	local function IsEnabled()
+    	if not addon.Retail then
+      		return false
+    	end
+    	return addon.db.profile.uiModifications.LFGApplicantTooltip
+	end
 
-							if addon.db.profile.wrapTooltip == true then
-								note = wrap(note, addon.db.profile.wrapTooltipLength, "    ", "", 4)
-							end
-
-							if main and #main > 0 then
-								GameTooltip:AddLine(Formats.tooltipNoteWithMain:format(GetRatingColor(rating), nameFound, note))
-							else
-								GameTooltip:AddLine(Formats.tooltipNote:format(GetRatingColor(rating), note))
-							end
-
-							GameTooltip:Show()
-						end
-
-					end)
-					member:HookScript("OnLeave", OnLeaveHideTooltip)
-				end
+	local hooked = {}
+	local function HookFrames(frames)
+		if not frames then return end
+		for _, frame in pairs(frames) do
+			if not hooked[frame] then
+				frame:HookScript("OnEnter", OnEnter)
+				frame:HookScript("OnLeave", OnLeave)
+				hooked[frame] = true
 			end
 		end
+	end
+
+	function OnEnter(self)
+        local entry = C_LFGList.GetActiveEntryInfo()
+        if entry then
+            activeEntry.activityID = entry.activityID
+        end
+        if not activeEntry.activityID or not IsEnabled() then
+            return
+        end
+
+		if self.applicantID and self.Members then
+			HookFrames(self.Members)
+			return
+		elseif self.memberIdx then
+			local id = self:GetParent().applicantID
+			local name = C_LFGList.GetApplicantMemberInfo(id, self.memberIdx)
+			local note, rating, main, nameFound = NotesDB:GetInfoForNameOrMain(name)
+
+			if note then
+				GameTooltip:AddLine(" ")
+				if addon.db.profile.wrapTooltip == true then
+					note = wrap(note, addon.db.profile.wrapTooltipLength, "    ", "", 4)
+				end
+				if main and #main > 0 then
+					GameTooltip:AddLine(Formats.tooltipNoteWithMain:format(GetRatingColor(rating), nameFound, note))
+				else
+					GameTooltip:AddLine(Formats.tooltipNote:format(GetRatingColor(rating), note))
+				end
+				GameTooltip:Show()
+			end
+		end
+	end
+
+	function OnLeave(self)
+		GameTooltip:Hide()
+	end
+
+	local function OnScroll(self)
+    	if not IsEnabled() then return end
+		GameTooltip:Hide()
+		local frame = _G.GetMouseFocus()
+		pcall(frame, "OnEnter")
+	end
+
+	function module:Setup()
+    	if not IsEnabled() then return end
+		if self.enabled then return end
+
+		local hooks = { ["OnEnter"] = OnEnter, ["OnLeave"] = OnLeave }
+        ScrollBoxUtil:OnViewFramesChanged(_G.LFGListFrame.SearchPanel.ScrollBox, function(frames) HookAllFrames(frames, hooks) end)
+        ScrollBoxUtil:OnViewScrollChanged(_G.LFGListFrame.SearchPanel.ScrollBox, OnScroll)
+        ScrollBoxUtil:OnViewFramesChanged(_G.LFGListFrame.ApplicationViewer.ScrollBox, function(frames) HookAllFrames(frames, hooks) end)
+        ScrollBoxUtil:OnViewScrollChanged(_G.LFGListFrame.ApplicationViewer.ScrollBox, OnScroll)
+
+		self.enabled = true
+	end
+
+	function module:OnEnable()
+		self:Setup()
 	end
 end
 
@@ -232,7 +276,7 @@ do
 			end)
 			return
 		end
-		local hooks = { OnEnter = OnEnter, OnLeave = OnLeave }
+		local hooks = { ["OnEnter"] = OnEnter, ["OnLeave"] = OnLeave }
 		ScrollBoxUtil:OnViewFramesChanged(_G.GuildRosterContainer, function(frames) HookAllFrames(frames, hooks) end)
 		ScrollBoxUtil:OnViewScrollChanged(_G.GuildRosterContainer, OnScroll)
 		self.enabled = true
