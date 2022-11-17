@@ -29,6 +29,7 @@ addon.CURRENT_BUILD, addon.CURRENT_INTERNAL,
 addon.Classic = versionInRange(addon.CURRENT_UI_VERSION, 0, 20000)
 addon.TBC = versionInRange(addon.CURRENT_UI_VERSION, 20000, 30000)
 addon.Retail = versionInRange(addon.CURRENT_UI_VERSION, 90000)
+addon.DF = versionInRange(addon.CURRENT_UI_VERSION, 100000)
 
 addon.Colors = {
   Green =  "|cff00ff00",

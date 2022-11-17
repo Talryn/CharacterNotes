@@ -1246,12 +1246,19 @@ function CharacterNotes:SaveEditNote(name, note, rating)
 	editwindow.editbox:SetText("")
 end
 
+local function OnTooltipSetUnit(tooltip, data, ...)
+	CharacterNotes:OnTooltipSetUnit(tooltip, data, ...)
+end
+
 function CharacterNotes:OnEnable()
 	NotesDB:OnEnable()
 
     -- Hook the game tooltip so we can add character Notes
-    self:HookScript(_G.GameTooltip, "OnTooltipSetUnit")
-
+	if TooltipDataProcessor then
+		TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, OnTooltipSetUnit)
+	else
+		self:HookScript(_G.GameTooltip, "OnTooltipSetUnit")
+	end
 	-- Hook the friends frame tooltip
 	--self:HookScript("FriendsFrameTooltip_Show")
 
