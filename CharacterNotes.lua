@@ -1253,7 +1253,7 @@ end
 function CharacterNotes:OnEnable()
 	NotesDB:OnEnable()
 
-    -- Hook the game tooltip so we can add character Notes
+    -- Hook the game tooltip so we can add lines
 	if TooltipDataProcessor then
 		TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, OnTooltipSetUnit)
 	else
