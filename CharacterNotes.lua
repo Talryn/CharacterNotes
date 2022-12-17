@@ -1360,6 +1360,7 @@ function CharacterNotes:BuildTableData()
 end
 
 function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
+	if tooltip ~= _G.GameTooltip then return end
     if self.db.profile.showNotesInTooltips == false then return end
 
     local main
