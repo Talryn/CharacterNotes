@@ -226,6 +226,13 @@ do
 	local module = CharacterNotes:NewModule("GuildTooltip")
 	module.enabled = false
 
+	local function IsEnabled()
+    	if not addon.Retail then
+      		return false
+    	end
+    	return addon.db.profile.uiModifications.GuildRosterTooltip
+	end
+
 	local function OnEnter(self)
 	    if not IsEnabled() then return end
     	if not self.guildIndex then return end
@@ -258,13 +265,6 @@ do
     	if not IsEnabled() then return end
 		GameTooltip:Hide()
 		pcall(_G.GetMouseFocus(), "OnEnter")
-	end
-
-	local function IsEnabled()
-    	if not addon.Retail then
-      		return false
-    	end
-    	return addon.db.profile.uiModifications.GuildRosterTooltip
 	end
 
 	function module:Setup()
