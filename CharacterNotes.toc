@@ -1,5 +1,5 @@
-## Interface: 100000
-## Interface-Retail: 100000
+## Interface: 100100
+## Interface-Retail: 100100
 ## Interface-Classic: 11403
 ## Interface-BCC: 20504
 ## Interface-Wrath: 30400
@@ -7,6 +7,8 @@
 ## Notes: Set and manage character notes that are displayed in unit tooltips and /who results.
 ## Author: Talryn
 ## Version: @project-version@
+## AddonCompartmentFunc: CharacterNotes_OnAddonCompartmentClick
+## IconTexture: Interface\Icons\INV_Misc_Note_06.blp
 ## OptionalDeps: Ace3, LibDeformat-3.0, lib-st, LibDataBroker-1.1, LibDBIcon-1.0, LibAlts-1.0
 ## X-Embeds: Ace3
 ## X-Category: Interface Enhancements

@@ -137,6 +137,28 @@ function CharacterNotes:GetFontSettings()
 end
 addon.GetFontSettings = CharacterNotes.GetFontSettings
 
+function CharacterNotes:OnClickIcon(button)
+	if button == "RightButton" then
+		if addon.IsGameOptionsVisible() then
+			addon.HideGameOptions()
+		else
+			self:HideNotesWindow()
+			self:ShowOptions()
+		end
+	elseif button == "LeftButton" then
+		if self:IsNotesVisible() then
+			self:HideNotesWindow()
+		else
+			addon.HideGameOptions()
+			self:NotesHandler("")
+		end
+	end
+end
+
+function CharacterNotes_OnAddonCompartmentClick(addonName, buttonName)
+	CharacterNotes:OnClickIcon(buttonName)
+end
+
 function CharacterNotes:OnInitialize()
     -- Called when the addon is loaded
     self.db = LibStub("AceDB-3.0"):New("CharacterNotesDB", defaults, "Default")
@@ -188,21 +210,7 @@ function CharacterNotes:OnInitialize()
 		type = "launcher",
 		icon = "Interface\\Icons\\INV_Misc_Note_06.blp",
 		OnClick = function(clickedframe, button)
-    		if button == "RightButton" then
-    			if addon.IsGameOptionsVisible() then
-    				addon.HideGameOptions()
-    			else
-    			    self:HideNotesWindow()
-    				self:ShowOptions()
-    			end
-    		elseif button == "LeftButton" then
-    			if self:IsNotesVisible() then
-    				self:HideNotesWindow()
-    			else
-    			    addon.HideGameOptions()
-    				self:NotesHandler("")
-    			end
-            end
+			self:OnClickIcon(button)
 		end,
 		OnTooltipShow = function(tooltip)
 			if tooltip and tooltip.AddLine then
