@@ -7,6 +7,7 @@ local icon = LibStub("LibDBIcon-1.0")
 local LSM = _G.LibStub:GetLibrary("LibSharedMedia-3.0")
 
 function CharacterNotes:GetOptions()
+  local options = {}
   if not self.options then
     options = {
       name = ADDON_NAME,
