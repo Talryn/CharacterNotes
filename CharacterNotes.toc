@@ -1,8 +1,9 @@
-## Interface: 100107
-## Interface-Retail: 100107
-## Interface-Classic: 11404
+## Interface: 100205
+## Interface-Retail: 100205
+## Interface-Classic: 11501
 ## Interface-BCC: 20504
 ## Interface-Wrath: 30403
+## Interface-Cata: 40400
 ## Title: Character Notes
 ## Notes: Set and manage character notes that are displayed in unit tooltips and /who results.
 ## Author: Talryn
