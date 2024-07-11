@@ -25,6 +25,7 @@ locale.xml
 Core.lua
 RealmData.lua
 NotesDB.lua
+LibDropDownExtension.lua
 CharacterNotes.lua
 Options.lua
 InterfaceMods.lua

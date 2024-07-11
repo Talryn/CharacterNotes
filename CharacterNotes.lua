@@ -36,6 +36,7 @@ local LDB = LibStub("LibDataBroker-1.1")
 local icon = LibStub("LibDBIcon-1.0")
 local LSM = _G.LibStub:GetLibrary("LibSharedMedia-3.0")
 local LibAlts = LibStub("LibAlts-1.0")
+local LibDD = LibStub:GetLibrary("LibUIDropDownMenu-4.0")
 
 -- String formats
 addon.Formats = {
@@ -54,6 +55,7 @@ local defaults = {
 	profile = {
 		minimap = {
 			hide = true,
+			menu = true,
 		},
 		verbose = true,
 		debug = false,
@@ -137,6 +139,53 @@ function CharacterNotes:GetFontSettings()
 end
 addon.GetFontSettings = CharacterNotes.GetFontSettings
 
+function CharacterNotes:ShowMenu(hideDelay)
+	if not addon.menu then
+		addon.menu = LibDD:Create_UIDropDownMenu("CharacterNotesMenuFrame", UIParent)
+	end
+	local menuTable = {}
+	tinsert(menuTable, {
+		text = L["Show Notes"],
+		func = function() self:NotesHandler("") end,
+		icon = "",
+		isNotRadio = true,
+		notCheckable = true,
+	})
+
+	local targetName = self:GetTargetName()
+	if targetName then
+		tinsert(menuTable, {
+			text = L["Edit Note for Target"],
+			func = function() self:EditNoteHandler() end,
+			icon = "",
+			isNotRadio = true,
+			notCheckable = true,
+		})
+		-- tinsert(menuTable, {
+		-- 	text = targetName,
+		-- 	leftPadding = 8,
+		-- 	isNotRadio = true,
+		-- 	notCheckable = true,
+		-- 	notClickable = true
+		-- })
+	end
+
+	tinsert(menuTable, {
+		text = L["Options"],
+		func = function() self:ShowOptions() end,
+		icon = "",
+		isNotRadio = true,
+		notCheckable = true,
+	})
+	tinsert(menuTable, {
+		text = L["Cancel"],
+		func = function() end,
+		isNotRadio = true,
+		notCheckable = true,
+	})
+	LibDD:EasyMenu(menuTable, addon.menu, "cursor", -85, -18, "MENU", hideDelay or 5)
+end
+
 function CharacterNotes:OnClickIcon(button)
 	if button == "RightButton" then
 		if addon.IsGameOptionsVisible() then
@@ -146,11 +195,15 @@ function CharacterNotes:OnClickIcon(button)
 			self:ShowOptions()
 		end
 	elseif button == "LeftButton" then
-		if self:IsNotesVisible() then
-			self:HideNotesWindow()
+		if addon.db.profile.minimap.menu then
+			self:ShowMenu()
 		else
-			addon.HideGameOptions()
-			self:NotesHandler("")
+			if self:IsNotesVisible() then
+				self:HideNotesWindow()
+			else
+				addon.HideGameOptions()
+				self:NotesHandler("")
+			end
 		end
 	end
 end
@@ -216,7 +269,7 @@ function CharacterNotes:OnInitialize()
 			if tooltip and tooltip.AddLine then
 				tooltip:AddLine(Colors.Green .. L["Character Notes"].." "..ADDON_VERSION)
 				tooltip:AddLine(Colors.Yellow .. L["Left click"] .. " " .. Colors.White
-					.. L["to open/close the window"])
+					.. (addon.db.profile.minimap.menu and L["to show the menu"] or L["to open/close the window"]))
 				tooltip:AddLine(Colors.Yellow .. L["Right click"] .. " " .. Colors.White
 					.. L["to open/close the configuration."])
 			end
@@ -1205,17 +1258,21 @@ function CharacterNotes:ShowEditNoteFrame(name, note)
 
 end
 
+function CharacterNotes:GetTargetName()
+	if _G.UnitExists("target") and _G.UnitIsPlayer("target") then
+		local target = _G.GetUnitName("target", true)
+		if target and #target > 0 then
+			return target
+		end
+	end
+end
+
 function CharacterNotes:EditNoteHandler(input)
 	local name = nil
 	if input and #input > 0 then
 		name = input
 	else
-		if _G.UnitExists("target") and _G.UnitIsPlayer("target") then
-			local target = _G.GetUnitName("target", true)
-			if target and #target > 0 then
-				name = target
-			end
-		end
+		name = self:GetTargetName()
 	end
 
 	if name and #name > 0 then

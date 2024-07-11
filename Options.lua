@@ -42,7 +42,19 @@ function CharacterNotes:GetOptions()
                         end,
       			order = 10
               },
-      	    useLibAlts = {
+              minimapMenu = {
+                name = L["Minimap Menu"],
+                desc = L["MinimapMenu_Disc"],
+                type = "toggle",
+                set = function(info,val)
+                        self.db.profile.minimap.menu = val
+                      end,
+                get = function(info)
+                        return self.db.profile.minimap.menu
+                      end,
+                order = 15
+            },
+              useLibAlts = {
                   name = L["Use LibAlts Data"],
                   desc = L["Toggles the use of LibAlts data if present.  If present and no note is found for a character, the note for the main will be shown if found."],
                   type = "toggle",

@@ -54,5 +54,9 @@ externals:
     Libs/AceGUI-3.0-SharedMediaWidgets:
         url: https://repos.wowace.com/wow/ace-gui-3-0-shared-media-widgets/trunk/AceGUI-3.0-SharedMediaWidgets
 
+    Libs/LibUIDropDownMenu:
+        url: https://repos.wowace.com/wow/libuidropdownmenu/trunk/LibUIDropDownMenu
+        tag: latest
+
 ignore:
     - .pkgmeta
