@@ -14,6 +14,14 @@ local NotesDB = addon.NotesDB
 local CharacterNotes = _G.LibStub("AceAddon-3.0"):GetAddon(addon.addonName)
 local L = LibStub("AceLocale-3.0"):GetLocale(addon.addonName, true)
 
+function addon.GetMouseFocusFrame()
+	if _G.GetMouseFocus then
+		return _G.GetMouseFocus()
+	elseif _G.GetMouseFoci then
+		return _G.GetMouseFoci()
+	end
+end
+
 local ScrollBoxUtil = {}
 function ScrollBoxUtil:OnViewFramesChanged(scrollBox, callback)
 	if not scrollBox then return end
@@ -71,7 +79,7 @@ function CharacterNotes:EnableInterfaceModifications()
         CharacterNotes.LFGListUtil_SetSearchEntryTooltip)
     end
     if self.db.profile.uiModifications["LFGGroupMenuEditNote"] then
-      hooksecurefunc("EasyMenu_Initialize", CharacterNotes.EasyMenu_Initialize)
+      --hooksecurefunc("EasyMenu_Initialize", CharacterNotes.EasyMenu_Initialize)
     end
 	CharacterNotes:EnableModule("LFGApplicantTooltip")
 	CharacterNotes:EnableModule("GuildTooltip")
@@ -172,7 +180,7 @@ do
 	local function OnScroll(self)
     	if not IsEnabled() then return end
 		GameTooltip:Hide()
-		local frame = _G.GetMouseFocus()
+		local frame = addon.GetMouseFocusFrame()
 		pcall(frame, "OnEnter")
 	end
 
@@ -264,7 +272,7 @@ do
 	local function OnScroll()
     	if not IsEnabled() then return end
 		GameTooltip:Hide()
-		pcall(_G.GetMouseFocus(), "OnEnter")
+		pcall(addon.GetMouseFocusFrame(), "OnEnter")
 	end
 
 	function module:Setup()
@@ -373,7 +381,7 @@ do
 	local function OnScroll()
 	    if not IsEnabled() then return end
 		GameTooltip:Hide()
-		pcall(_G.GetMouseFocus(), "OnEnter")
+		pcall(addon.GetMouseFocusFrame(), "OnEnter")
 	end
 
 	local hooked = {}
@@ -563,9 +571,42 @@ do
     ---@type LibDropDownExtension
     local LibDropDownExtension = LibStub and LibStub:GetLibrary("LibDropDownExtension-1.0", true)
 
-	function module:Setup()
+	function module:HasMenu()
+		return Menu and Menu.ModifyMenu
+	end
+
+	function module:MenuHandler(owner, rootDescription, contextData)
+		rootDescription:CreateDivider();
+		rootDescription:CreateTitle(addon.addonTitle);
+		rootDescription:CreateButton(L["Edit Note"], function()
+			DevTools_Dump(contextData)
+			local name = NotesDB:FormatNameWithRealm(contextData.name, contextData.server)
+			if name then
+				CharacterNotes:EditNoteHandler(name)
+			end
+		end)
+	end
+
+	function module:AddItemsWithMenu()
+		if not self:HasMenu() then return end
+
+		-- Find via /run Menu.PrintOpenMenuTags()
+		local menuTags = {
+			["MENU_UNIT_PLAYER"] = true,
+			["MENU_UNIT_FRIEND"] = true,
+			--["MENU_CHAT_FRAME_CHANNEL"] = true,
+			["MENU_UNIT_COMMUNITIES_GUILD_MEMBER"] = true,
+			["MENU_UNIT_COMMUNITIES_MEMBER"] = true,
+			["MENU_LFG_FRAME_SEARCH_ENTRY"] = true,
+		}
+
+		for tag, enabled in pairs(menuTags) do
+			Menu.ModifyMenu(tag, GenerateClosure(self.MenuHandler, self))
+		end
+	end
+
+	function module:AddItemsWithDDE()
 		if not LibDropDownExtension then return end
-		if not IsEnabled() then return end
 
 		self.unitOptions = {
 			{
@@ -582,6 +623,16 @@ do
 		end
 
 		LibDropDownExtension:RegisterEvent("OnShow OnHide", OnToggle, 1, self)
+	end
+
+	function module:Setup()
+		if not IsEnabled() then return end
+
+		if self:HasMenu() then
+			self:AddItemsWithMenu()
+		else
+			self:AddItemsWithDDE()
+		end
 		self.enabled = true
 	end
 
