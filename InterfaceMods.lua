@@ -4,6 +4,7 @@ local ADDON_NAME, addon = ...
 local pairs = _G.pairs
 local ipairs = _G.ipairs
 local type = _G.type
+local strsub = _G.strsub
 
 local wrap = addon.wrap
 local Colors = addon.Colors
@@ -575,12 +576,28 @@ do
 		return Menu and Menu.ModifyMenu
 	end
 
+	local function GetNameForContext(contextData)
+		local contextName = contextData.name
+		if not contextName then return nil end
+		if strsub(contextName, 1, 1) == "|" then
+			return nil
+		else
+			local name = NotesDB:FormatNameWithRealm(contextData.name, contextData.server)
+			return name
+		end
+	end
+
+	local function IsValidName(contextData)
+		return contextData.name and strsub(contextData.name, 1, 1) ~= "|"
+	end
+
 	function module:MenuHandler(owner, rootDescription, contextData)
+		if not IsValidName(contextData) then return end
 		rootDescription:CreateDivider();
 		rootDescription:CreateTitle(addon.addonTitle);
 		rootDescription:CreateButton(L["Edit Note"], function()
-			DevTools_Dump(contextData)
-			local name = NotesDB:FormatNameWithRealm(contextData.name, contextData.server)
+			--DevTools_Dump(contextData)
+			local name = GetNameForContext(contextData)
 			if name then
 				CharacterNotes:EditNoteHandler(name)
 			end
@@ -593,8 +610,9 @@ do
 		-- Find via /run Menu.PrintOpenMenuTags()
 		local menuTags = {
 			["MENU_UNIT_PLAYER"] = true,
+			["MENU_UNIT_PARTY"] = true,
+			["MENU_UNIT_RAID_PLAYER"] = true,
 			["MENU_UNIT_FRIEND"] = true,
-			--["MENU_CHAT_FRAME_CHANNEL"] = true,
 			["MENU_UNIT_COMMUNITIES_GUILD_MEMBER"] = true,
 			["MENU_UNIT_COMMUNITIES_MEMBER"] = true,
 			["MENU_LFG_FRAME_SEARCH_ENTRY"] = true,
