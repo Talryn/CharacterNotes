@@ -21,7 +21,7 @@ local function versionInRange(version, start, finish)
   return version >= start and version < finish
 end
 
-addon.addonTitle = _G.GetAddOnMetadata(ADDON_NAME,"Title")
+addon.addonTitle = C_AddOns.GetAddOnMetadata(ADDON_NAME,"Title")
 addon.addonVersion = cleanupVersion("@project-version@")
 
 addon.CURRENT_BUILD, addon.CURRENT_INTERNAL,
