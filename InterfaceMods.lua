@@ -579,16 +579,22 @@ do
 	local function GetNameForContext(contextData)
 		local contextName = contextData.name
 		if not contextName then return nil end
-		if strsub(contextName, 1, 1) == "|" then
-			return nil
-		else
+		if strsub(contextName, 1, 1) ~= "|" then
 			local name = NotesDB:FormatNameWithRealm(contextData.name, contextData.server)
 			return name
+		else
+			local info = (contextData.accountInfo or {}).gameAccountInfo
+			if info and info.clientProgram and info.clientProgram == "WoW" and
+				info.characterName and info.realmName then
+				local name = NotesDB:FormatNameWithRealm(info.characterName, info.realmName)
+				return name
+			end
+			return nil
 		end
 	end
 
 	local function IsValidName(contextData)
-		return contextData.name and strsub(contextData.name, 1, 1) ~= "|"
+		return contextData and contextData.name and strsub(contextData.name, 1, 1) ~= "|"
 	end
 
 	function module:MenuHandler(owner, rootDescription, contextData)
