@@ -94,7 +94,7 @@ end
 
 function CharacterNotes.LFGListUtil_SetSearchEntryTooltip(tooltip, resultID, autoAcceptOption)
 	local searchResultInfo = C_LFGList.GetSearchResultInfo(resultID);
-  local leader = searchResultInfo.leaderName
+    local leader = searchResultInfo.leaderName
 	local note, rating, main, nameFound = NotesDB:GetInfoForNameOrMain(leader)
 
 	if note then
@@ -105,11 +105,11 @@ function CharacterNotes.LFGListUtil_SetSearchEntryTooltip(tooltip, resultID, aut
 		end
 
 		if main and #main > 0 then
-      tooltip:AddLine(Formats.nameWithMainRating:format(GetRatingColor(rating), main, leader))
-      tooltip:AddLine(note, 1, 1, 1)
+			tooltip:AddLine(Formats.nameWithMainRating:format(GetRatingColor(rating), main, leader))
+			tooltip:AddLine(note, 1, 1, 1)
 		else
-      tooltip:AddLine(Formats.nameRating:format(GetRatingColor(rating), nameFound))
-      tooltip:AddLine(note, 1, 1, 1)
+			tooltip:AddLine(Formats.nameRating:format(GetRatingColor(rating), nameFound))
+			tooltip:AddLine(note, 1, 1, 1)
 		end
 
 		tooltip:Show()
@@ -593,17 +593,44 @@ do
 		end
 	end
 
+	local lfgTags = {
+        MENU_LFG_FRAME_SEARCH_ENTRY = true,
+        MENU_LFG_FRAME_MEMBER_APPLY = true,
+    }
+
+	local function GetLFGListName(owner)
+		local resultID = owner.resultID
+		if resultID then
+        	local searchResultInfo = C_LFGList.GetSearchResultInfo(resultID)
+        	return searchResultInfo.leaderName
+		end
+		local memberIdx = owner.memberIdx
+		if not memberIdx then
+			return
+		end
+		local parent = owner:GetParent()
+		if not parent then
+			return
+		end
+		local applicantID = parent.applicantID
+		if not applicantID then
+        	return
+		end
+		local name = C_LFGList.GetApplicantMemberInfo(applicantID, memberIdx)
+		return name
+   end
+
 	local function IsValidName(contextData)
 		return contextData and contextData.name and strsub(contextData.name, 1, 1) ~= "|"
 	end
 
 	function module:MenuHandler(owner, rootDescription, contextData)
-		if not IsValidName(contextData) then return end
+		if not IsValidName(contextData) and not lfgTags[rootDescription.tag] then return end
 		rootDescription:CreateDivider();
 		rootDescription:CreateTitle(addon.addonTitle);
 		rootDescription:CreateButton(L["Edit Note"], function()
 			--DevTools_Dump(contextData)
-			local name = GetNameForContext(contextData)
+			local name = (contextData and GetNameForContext(contextData)) or GetLFGListName(owner)
 			if name then
 				CharacterNotes:EditNoteHandler(name)
 			end
@@ -622,6 +649,7 @@ do
 			["MENU_UNIT_COMMUNITIES_GUILD_MEMBER"] = true,
 			["MENU_UNIT_COMMUNITIES_MEMBER"] = true,
 			["MENU_LFG_FRAME_SEARCH_ENTRY"] = true,
+			["MENU_LFG_FRAME_MEMBER_APPLY"] = true,
 		}
 
 		for tag, enabled in pairs(menuTags) do
