@@ -822,14 +822,14 @@ function CharacterNotes:CreateNotesFrame()
 
 	local searchbutton = _G.CreateFrame("Button", nil, noteswindow, "UIPanelButtonTemplate")
 	searchbutton:SetText(L["Search"])
-	searchbutton:SetWidth(100)
+	searchbutton:SetWidth(80)
 	searchbutton:SetHeight(20)
 	searchbutton:SetPoint("LEFT", searchterm, "RIGHT", 10, 0)
 	searchbutton:SetScript("OnClick", function(this) this:GetParent().table:SortData() end)
 
 	local clearbutton = _G.CreateFrame("Button", nil, noteswindow, "UIPanelButtonTemplate")
 	clearbutton:SetText(L["Clear"])
-	clearbutton:SetWidth(100)
+	clearbutton:SetWidth(80)
 	clearbutton:SetHeight(20)
 	clearbutton:SetPoint("LEFT", searchbutton, "RIGHT", 10, 0)
 	clearbutton:SetScript("OnClick",
@@ -837,6 +837,21 @@ function CharacterNotes:CreateNotesFrame()
 	        searchterm:SetText("")
 	        this:GetParent().table:SortData()
 	    end)
+
+	local addbutton = _G.CreateFrame("Button", nil, noteswindow, "UIPanelButtonTemplate")
+	addbutton:SetText(L["Add"])
+	addbutton:SetWidth(80)
+	addbutton:SetHeight(20)
+	addbutton:SetPoint("LEFT", clearbutton, "RIGHT", 10, 0)
+	addbutton:SetScript("OnClick", function(this)
+		local username = searchterm:GetText()
+		if username ~= "" then
+			NotesDB:SetNote(username, "")
+			searchterm:SetText("")
+			this:GetParent().table:SortData()
+			self:EditNoteHandler(username)
+		end
+	end)
 
 	local closebutton = _G.CreateFrame("Button", nil, noteswindow, "UIPanelButtonTemplate")
 	closebutton:SetText(L["Close"])
@@ -1086,7 +1101,14 @@ function CharacterNotes:CreateEditNoteFrame()
 	    function(this)
 	        local frame = this:GetParent()
 	        local rating = _G.UIDropDownMenu_GetSelectedValue(editwindow.ratingDropdown)
-	        self:SaveEditNote(frame.charname:GetText(),frame.editbox:GetText(), rating)
+			local charname = frame.charname:GetText()
+			if charname == nil or charname == "" then
+				return
+			end
+			if editwindow._charname and editwindow._charname ~= charname then
+				NotesDB:DeleteNote(editwindow._charname)
+			end
+	        self:SaveEditNote(charname,frame.editbox:GetText(), rating)
 	        frame:Hide()
 	    end)
 
@@ -1102,10 +1124,11 @@ function CharacterNotes:CreateEditNoteFrame()
 	headertext:SetPoint("TOP", editwindow, "TOP", 0, -20)
 	headertext:SetText(L["Edit Note"])
 
-	local charname = editwindow:CreateFontString("CN_CharName", "OVERLAY")
+	local charname = _G.CreateFrame("EditBox", nil, editwindow, "InputBoxTemplate")
 	charname:SetPoint("BOTTOM", headertext, "BOTTOM", 0, -40)
-	charname:SetFont(font, fh, fflags)
-	charname:SetTextColor(1.0,1.0,1.0,1)
+	charname:SetFontObject(_G.ChatFontNormal)
+	charname:SetWidth(300)
+	charname:SetHeight(35)
 
 	local ratingLabel = editwindow:CreateFontString("CN_RatingLabel", "OVERLAY")
 	ratingLabel:SetFont(font, fh, fflags)
@@ -1284,6 +1307,7 @@ function CharacterNotes:EditNoteHandler(input)
 		local editwindow = editNoteFrame
 		editwindow.charname:SetText(charNote and nameFound or name)
 		editwindow.editbox:SetText(charNote or "")
+		editwindow._charname = editwindow.charname:GetText()
 
 		editwindow:Show()
 		editwindow:Raise()
