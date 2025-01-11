@@ -104,11 +104,11 @@ function NotesDB:GetAlternateName(name)
 		self:FormatNameWithRealm(self:TitleCase(nameOnly), self.playerRealmAbbr)
 end
 
-function NotesDB:GetNote(name)
+function NotesDB:GetNote(name, checkAlt)
 	if self.db.realm.notes and name then
 		local nameFound = self:FormatUnitName(name)
 		local note = self.db.realm.notes[nameFound]
-		if not note then
+		if not note and checkAlt ~= false then
 			local altName = self:GetAlternateName(name)
 			note = self.db.realm.notes[altName]
 			if note then nameFound = altName end
