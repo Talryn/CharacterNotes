@@ -430,6 +430,14 @@ function CharacterNotes:InterfaceModsOptions()
         get = function(info) return self.db.profile.uiModifications.LFGGroupMenuEditNote end,
         order = baseOrderCurrent + 120
     },
+    lfgReportAdsFix = {
+        name = L["Report Advertisement Fix"],
+        desc = L["ReportAdsFix_Opt"],
+        type = "toggle",
+        set = function(info,val) self.db.profile.uiModifications.reportAdsFix = val end,
+        get = function(info) return self.db.profile.uiModifications.reportAdsFix end,
+        order = baseOrderCurrent + 130
+    },
   }
 
   -- Options for Classic only.

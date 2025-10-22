@@ -83,6 +83,14 @@ function CharacterNotes:EnableInterfaceModifications()
             --hooksecurefunc("EasyMenu_Initialize", CharacterNotes.EasyMenu_Initialize)
         end
         CharacterNotes:EnableModule("LFGApplicantTooltip")
+
+
+        if self.db.profile.uiModifications["reportAdsFix"] then
+            if LFGList_ReportAdvertisement and LFGList_ReportListing then
+                LFGList_ReportAdvertisement = LFGList_ReportListing
+            end
+        end
+
         CharacterNotes:EnableModule("GuildTooltip")
         CharacterNotes:EnableModule("CommunitiesTooltip")
     end
