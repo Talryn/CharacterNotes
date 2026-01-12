@@ -101,7 +101,7 @@ local defaults = {
             ["GuildRosterTooltip"] = true,
             ["CommunitiesTooltip"] = true,
             ["ignoreTooltips"] = true,
-            ["reportAdsFix"] = true,
+            ["reportAdsFix"] = false,
         }
     },
     realm = {
