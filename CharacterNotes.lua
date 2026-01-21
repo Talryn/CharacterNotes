@@ -124,7 +124,7 @@ local playerName = _G.GetUnitName("player", true)
 function CharacterNotes:ShowOptions()
     if Settings and Settings.OpenToCategory and
         _G.type(Settings.OpenToCategory) == "function" then
-        Settings.OpenToCategory(addon.addonTitle)
+        Settings.OpenToCategory(self.optionsCategoryId)
     else
         _G.InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Main)
     end
@@ -247,7 +247,7 @@ function CharacterNotes:OnInitialize()
     LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable(displayName, self.options)
     self.optionsFrame = {}
     local ACD = LibStub("AceConfigDialog-3.0")
-    self.optionsFrame.Main = ACD:AddToBlizOptions(
+    self.optionsFrame.Main, self.optionsCategoryId = ACD:AddToBlizOptions(
         displayName, displayName, nil, "core")
     self.optionsFrame.Notes = ACD:AddToBlizOptions(
         displayName, L["Import/Export"], displayName, "export")
