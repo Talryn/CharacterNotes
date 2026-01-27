@@ -1671,7 +1671,7 @@ local function AddNoteForChat(message, name)
 end
 
 function CharacterNotes:AddMessage(frame, text, r, g, b, id, ...)
-    if text and _G.type(text) == "string" and self.db.profile.noteLinksInChat == true then
+    if addon.canaccessvalue(text) and text and _G.type(text) == "string" and self.db.profile.noteLinksInChat == true then
         -- If no charnotes are present then insert one.
         if text:find("|Hcharnote:") == nil then
             text = text:gsub("(|Hplayer:([^:]+).-|h.-|h)", AddNoteForChat)
@@ -1681,6 +1681,8 @@ function CharacterNotes:AddMessage(frame, text, r, g, b, id, ...)
 end
 
 function CharacterNotes:CHAT_MSG_SYSTEM(event, message)
+    if not addon.canaccessvalue(message) then return end
+
     local name, type
 
     if self.db.profile.showNotesOnWho == true then
