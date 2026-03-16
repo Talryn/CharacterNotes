@@ -1493,6 +1493,14 @@ function CharacterNotes:OnEnable()
     self:EnableNoteLinks()
 
     playerName = _G.GetUnitName("player", true)
+
+    addon.restricted = false
+    addon.restrictedEvents = C_EventUtils and C_EventUtils.IsEventValid and
+        C_EventUtils.IsEventValid("ADDON_RESTRICTION_STATE_CHANGED")
+    -- Track addon restriction state
+    if addon.restrictedEvents then
+        self:RegisterEvent("ADDON_RESTRICTION_STATE_CHANGED")
+    end
 end
 
 function CharacterNotes:EnableNoteLinks()
@@ -1520,6 +1528,9 @@ function CharacterNotes:OnDisable()
     -- Called when the addon is disabled
     self:UnregisterEvent("CHAT_MSG_SYSTEM")
     self:UnregisterEvent("GROUP_ROSTER_UPDATE")
+    if addon.restrictedEvents then
+        self:UnregisterEvent("ADDON_RESTRICTION_STATE_CHANGED")
+    end
 end
 
 function CharacterNotes:SetItemRef(link, text, button, ...)
@@ -1570,7 +1581,7 @@ function CharacterNotes:BuildTableData()
 end
 
 function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
-    if _G.IsInInstance() then return end
+    if addon.restricted then return end
     if tooltip ~= _G.GameTooltip then return end
     if self.db.profile.showNotesInTooltips == false then return end
 
@@ -1812,6 +1823,11 @@ function CharacterNotes:RemoveSpacesFromRealm()
 
         self.db.realm.removedSpacesFromRealm = true
     end
+end
+
+function CharacterNotes:ADDON_RESTRICTION_STATE_CHANGED(event, restrictType, restrictState)
+    addon.restricted = restrictState ~= Enum.AddOnRestrictionState.Inactive
+    if self.db.profile.debug then self:Print("Restrictions " .. _G.tostring(addon.restricted)) end
 end
 
 function CharacterNotes:RAID_ROSTER_UPDATE(event, message)
