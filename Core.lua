@@ -147,6 +147,14 @@ function addon.HideGameOptions()
     end
 end
 
+function addon.alwaysTrue()
+    return true
+end
+
+function addon.alwaysFalse()
+    return false
+end
+
 local canaccessvalue = (_G.canaccessvalue and _G.type(_G.canaccessvalue) == "function") and _G.canaccessvalue or nil
 function addon.canaccessvalue(value)
     if canaccessvalue then
@@ -155,3 +163,5 @@ function addon.canaccessvalue(value)
         return true
     end
 end
+
+addon.issecretvalue = (_G.issecretvalue and _G.type(_G.issecretvalue) == "function") and _G.issecretvalue or addon.alwaysFalse

@@ -1591,7 +1591,7 @@ function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
     local note, rating, nameFound
 
     -- If the unit exists and is a player then check if there is a note for it.
-    if unitid and not issecretvalue(unitid) and _G.UnitExists(unitid) and 
+    if unitid and not addon.issecretvalue(unitid) and _G.UnitExists(unitid) and
         _G.UnitIsPlayer(unitid) then
         -- Get the unit's name including the realm name
         name = _G.GetUnitName(unitid, true) or name
