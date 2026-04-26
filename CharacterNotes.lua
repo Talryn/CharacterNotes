@@ -1581,13 +1581,25 @@ function CharacterNotes:BuildTableData()
     end
 end
 
-function CharacterNotes:OnTooltipSetUnit(tooltip, ...)
-    if addon.restricted then return end
+local function GetTooltipUnitInfo(tooltip, data)
+    if C_TooltipInfo and TooltipDataProcessor then
+        local guid = data and data.guid
+        if guid and not addon.issecretvalue(guid) then
+            local unitid = UnitTokenFromGUID(guid)
+            return nil, unitid
+        end
+    else
+        return tooltip:GetUnit()
+    end
+end
+
+function CharacterNotes:OnTooltipSetUnit(tooltip, data, ...)
+    --if addon.restricted then return end
     if tooltip ~= _G.GameTooltip then return end
     if self.db.profile.showNotesInTooltips == false then return end
 
     local main
-    local name, unitid = tooltip:GetUnit()
+    local name, unitid = GetTooltipUnitInfo(tooltip, data)
     local note, rating, nameFound
 
     -- If the unit exists and is a player then check if there is a note for it.
