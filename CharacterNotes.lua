@@ -1059,9 +1059,8 @@ function CharacterNotes:CreateConfirmDeleteFrame()
     warningtext:SetText(L["Are you sure you wish to delete the note for:"])
 
     local charname = deletewindow:CreateFontString("CN_Confirm_CharName", "OVERLAY")
-    charname:SetFont(font, fh, fflags)
+    charname:SetFont(font, fh + 2, fflags)
     charname:SetPoint("BOTTOM", warningtext, "BOTTOM", 0, -40)
-    charname:SetFont(charname:GetFont(), 14)
     charname:SetTextColor(1.0, 1.0, 1.0, 1)
 
     local deletebutton = _G.CreateFrame("Button", nil, deletewindow, "UIPanelButtonTemplate")
