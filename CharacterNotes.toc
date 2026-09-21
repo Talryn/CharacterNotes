@@ -1,11 +1,11 @@
-## Interface: 120005
-## Interface-Retail: 110207, 120000, 120001, 120005
-## Interface-Classic: 11508, 11507, 16001
-## Interface-BCC: 20505
+## Interface: 120100
+## Interface-Retail: 110207, 120000, 120001, 120005, 120100
+## Interface-Classic: 11509, 16001
+## Interface-BCC: 20506
 ## Interface-Wrath: 30405
-## Interface-Titan: 38000
+## Interface-Titan: 38002
 ## Interface-Cata: 40402
-## Interface-Mists: 50502, 50503
+## Interface-Mists: 50504
 ## Title: Character Notes
 ## Notes: Set and manage character notes that are displayed in unit tooltips and /who results.
 ## Author: Talryn
