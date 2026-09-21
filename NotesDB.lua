@@ -79,8 +79,12 @@ function NotesDB:ParseName(name)
 end
 
 function NotesDB:FormatUnitName(name, relative)
-	local nameOnly, realm = self:ParseName(name)
-	return self:FormatNameWithRealm(nameOnly, realm, relative)
+    if addon.Forever then
+        return name
+    else
+        local nameOnly, realm = self:ParseName(name)
+        return self:FormatNameWithRealm(nameOnly, realm, relative)
+    end
 end
 
 function NotesDB:FormatUnitList(sep, relative, ...)

@@ -540,7 +540,7 @@ do
     local function GetName(dropdown)
         local unit = dropdown.unit
         if _G.UnitExists(unit) and _G.UnitIsPlayer(unit) then
-            return _G.GetUnitName(unit, true)
+            return addon.GetUnitName(unit, true)
         end
         if dropdown.bnetIDAccount then
             local name = addon.GetNameForBNetFriend(dropdown.bnetIDAccount)
@@ -612,8 +612,16 @@ do
         local contextName = contextData.name
         if not contextName then return nil end
         if strsub(contextName, 1, 1) ~= "|" then
-            local name = NotesDB:FormatNameWithRealm(contextData.name, contextData.server)
-            return name
+            if addon.Forever then
+                local surname = contextData.surname
+                if surname then
+                    return contextName .. " " .. surname
+                else
+                    return contextName
+                end
+            else
+                return NotesDB:FormatNameWithRealm(contextData.name, contextData.server)
+            end
         else
             local info = (contextData.accountInfo or {}).gameAccountInfo
             if info and info.clientProgram and info.clientProgram == "WoW" and

@@ -119,7 +119,7 @@ addon.editNoteFrame = nil
 local confirmDeleteFrame = nil
 local notesData = {}
 local previousGroup = {}
-local playerName = _G.GetUnitName("player", true)
+local playerName = addon.GetUnitName("player", true)
 
 function CharacterNotes:ShowOptions()
     if Settings and Settings.OpenToCategory and
@@ -363,7 +363,7 @@ function CharacterNotes:SetNoteHandler(input)
 
         if name and name:upper() == "%T" then
             if _G.UnitExists("target") and _G.UnitIsPlayer("target") then
-                local target = _G.GetUnitName("target", true)
+                local target = addon.GetUnitName("target", true)
                 if target and #target > 0 then
                     name = target
                 end
@@ -389,7 +389,7 @@ function CharacterNotes:DelNoteHandler(input)
         name, note = input:match("^(%S+) *(.*)")
     else
         if _G.UnitExists("target") and _G.UnitIsPlayer("target") then
-            local target = _G.GetUnitName("target", true)
+            local target = addon.GetUnitName("target", true)
             if target and #target > 0 then
                 name = target
             end
@@ -412,7 +412,7 @@ function CharacterNotes:SetRatingHandler(input)
 
         if name and name:upper() == "%T" then
             if _G.UnitExists("target") and _G.UnitIsPlayer("target") then
-                local target = _G.GetUnitName("target", true)
+                local target = addon.GetUnitName("target", true)
                 if target and #target > 0 then
                     name = target
                 end
@@ -438,7 +438,7 @@ function CharacterNotes:DelRatingHandler(input)
         name, note = input:match("^(%S+) *(.*)")
     else
         if _G.UnitExists("target") and _G.UnitIsPlayer("target") then
-            local target = _G.GetUnitName("target", true)
+            local target = addon.GetUnitName("target", true)
             if target and #target > 0 then
                 name = target
             end
@@ -1396,7 +1396,7 @@ end
 
 function CharacterNotes:GetTargetName()
     if _G.UnitExists("target") and _G.UnitIsPlayer("target") then
-        local target = _G.GetUnitName("target", true)
+        local target = addon.GetUnitName("target", true)
         if target and #target > 0 then
             return target
         end
@@ -1491,7 +1491,7 @@ function CharacterNotes:OnEnable()
     -- Enable note links
     self:EnableNoteLinks()
 
-    playerName = _G.GetUnitName("player", true)
+    playerName = addon.GetUnitName("player", true)
 
     addon.restricted = false
     addon.restrictedEvents = C_EventUtils and C_EventUtils.IsEventValid and
@@ -1605,7 +1605,7 @@ function CharacterNotes:OnTooltipSetUnit(tooltip, data, ...)
     if unitid and not addon.issecretvalue(unitid) and _G.UnitExists(unitid) and
         _G.UnitIsPlayer(unitid) then
         -- Get the unit's name including the realm name
-        name = _G.GetUnitName(unitid, true) or name
+        name = addon.GetUnitName(unitid, true) or name
         note, rating, main, nameFound = NotesDB:GetInfoForNameOrMain(name)
 
         if note then
@@ -1752,7 +1752,7 @@ function CharacterNotes:ProcessGroupRosterUpdate()
         local name
 
         for i = 1, numMembers do
-            name = _G.GetUnitName(groupType .. i, true)
+            name = addon.GetUnitName(groupType .. i, true)
             if name then
                 currentGroup[name] = true
 
@@ -1776,6 +1776,7 @@ end
 -- Patch 5.4 will change the formatting of names with realms appended.
 -- Remove the spaces surrounding the dash between the name and realm.
 function CharacterNotes:RemoveSpacesFromRealm()
+    if addon.Forever then return end
     if not self.db.realm.removedSpacesFromRealm then
         -- Find notes to be updated.
         local check

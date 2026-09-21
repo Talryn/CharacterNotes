@@ -33,6 +33,7 @@ addon.TBC = versionInRange(addon.CURRENT_UI_VERSION, 20000, 30000)
 addon.Retail = versionInRange(addon.CURRENT_UI_VERSION, 90000)
 addon.DF = versionInRange(addon.CURRENT_UI_VERSION, 100000)
 addon.TWW = versionInRange(addon.CURRENT_UI_VERSION, 110000)
+addon.Forever = versionInRange(addon.CURRENT_UI_VERSION, 16000, 20000)
 
 addon.Colors = {
     Green = "|cff00ff00",
@@ -144,6 +145,14 @@ function addon.HideGameOptions()
         end
     else
         optionsFrame:Hide()
+    end
+end
+
+function addon.GetUnitName(unit, showServerName)
+    if addon.Forever then
+        return _G.GetUnitName(unit)
+    else
+        return _G.GetUnitName(unit, showServerName)
     end
 end
 
