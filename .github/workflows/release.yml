@@ -10,6 +10,10 @@ on:
     tags:
       - '**'
 
+# needs permissions for create github release
+permissions:
+  contents: write
+
 # A workflow is built up as jobs, and within these jobs are steps.
 jobs:
 
@@ -32,11 +36,11 @@ jobs:
 
       # Clone the AddOn project, this is a required step
       - name: Clone project
-        uses: actions/checkout@v1
+        uses: actions/checkout@v7
         with:
           # You can specify how much of the commit history you want to fetch,
           # which is useful for controlling the length of the automated changelog
-          fetch-depth: 50
+          fetch-depth: 0
 
       # Package and release all versions
       - name: Package and release
